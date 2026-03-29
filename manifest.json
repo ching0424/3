@@ -1,0 +1,12 @@
+{
+  "name": "7ing & KM",
+  "short_name": "7ing&KM",
+  "description": "我們的小天地",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e2a",
+  "theme_color": "#2d6a4f",
+  "icons": [
+    { "src": "https://emojicdn.elk.sh/🌿?style=twitter", "sizes": "192x192", "type": "image/png" }
+  ]
+}
