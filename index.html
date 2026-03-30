@@ -290,7 +290,7 @@ const css = `
 
 /* ── Reset & base ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans TC','Nunito',sans-serif;color:var(--text);background:var(--bg);transition:background .6s,color .4s;min-height:100vh}
+body{font-family:'Noto Sans TC','Nunito',sans-serif;color:"var(--text)";background:"var(--bg)";transition:background .6s,color .4s;min-height:100vh}
 h1,h2,h3{font-family:'Caveat',cursive}
 .app{min-height:100vh;padding-bottom:40px}
 
@@ -329,20 +329,20 @@ body.night-mode {
 }
 
 /* ── NAV ── */
-.nav{background:var(--nav-bg);padding:0 20px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 4px 16px var(--shadow);border-bottom:3px solid var(--nav-border);transition:background .6s}
+.nav{background:"var(--nav-bg)";padding:0 20px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 4px 16px var(--shadow);border-bottom:3px solid var(--nav-border);transition:background .6s}
 .nav-logo{font-family:'Dancing Script',cursive;color:#fff;font-size:24px;font-weight:700;padding:14px 20px 14px 0;letter-spacing:1px;white-space:nowrap;text-shadow:0 1px 8px #0003}
-.nav-logo span{color:var(--accent)}
+.nav-logo span{color:"var(--accent)"}
 .nav-tab{padding:16px 18px;color:#fff9;cursor:pointer;font-size:14px;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;letter-spacing:.5px}
-.nav-tab:hover{color:#fff}
-.nav-tab.active{color:#fff;border-bottom-color:var(--accent);font-weight:700}
+.nav-tab:hover{color:"#fff"}
+.nav-tab.active{color:#fff;border-bottom-color:"var(--accent)";font-weight:700}
 
 /* ── PAGE ── */
 .page{max-width:960px;margin:0 auto;padding:32px 20px}
-.page-title{font-size:34px;color:var(--secondary);margin-bottom:24px;display:flex;align-items:center;gap:10px;font-family:'Caveat',cursive;font-weight:700}
+.page-title{font-size:34px;color:"var(--secondary)";margin-bottom:24px;display:flex;align-items:center;gap:10px;font-family:'Caveat',cursive;font-weight:700}
 
 /* ── CARD ── */
-.card{background:var(--card);border-radius:18px;padding:24px;box-shadow:0 4px 20px var(--shadow);margin-bottom:20px;border:2px solid var(--card-border);position:relative;overflow:hidden;transition:background .5s,border-color .5s,box-shadow .5s}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--progress)}
+.card{background:"var(--card)";border-radius:18px;padding:24px;box-shadow:0 4px 20px var(--shadow);margin-bottom:20px;border:2px solid var(--card-border);position:relative;overflow:hidden;transition:background .5s,border-color .5s,box-shadow .5s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:"var(--progress)"}
 /* hand-drawn card border effect */
 .card::after{content:'';position:absolute;inset:3px;border-radius:16px;border:1.5px dashed var(--soft);pointer-events:none;opacity:.5}
 /* Night mode extra polish */
@@ -358,93 +358,93 @@ body.night-mode .cal-day{border-color:rgba(100,140,255,0.15);background:rgba(255
 body.night-mode .event-item{background:rgba(255,255,255,0.05);border-color:rgba(100,140,255,0.15)}
 body.night-mode .page-title{text-shadow:0 0 20px rgba(108,143,212,0.4)}
 
-.card-title{font-family:'Caveat',cursive;font-size:22px;color:var(--secondary);margin-bottom:16px;font-weight:700}
+.card-title{font-family:'Caveat',cursive;font-size:22px;color:"var(--secondary)";margin-bottom:16px;font-weight:700}
 
 /* ── BADGES ── */
 .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid transparent}
-.badge-her{background:#e07a9f22;color:#e07a9f;border-color:#e07a9f44}
-.badge-him{background:#4ea8de22;color:#4ea8de;border-color:#4ea8de44}
-.badge-both{background:#f4a26122;color:#f4a261;border-color:#f4a26144}
+.badge-her{background:#e07a9f22;color:#e07a9f;border-color:"#e07a9f44"}
+.badge-him{background:#4ea8de22;color:#4ea8de;border-color:"#4ea8de44"}
+.badge-both{background:#f4a26122;color:#f4a261;border-color:"#f4a26144"}
 
 /* ── BUTTONS ── */
 .btn{padding:8px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;transition:all .18s;font-family:'Nunito',sans-serif;letter-spacing:.3px}
-.btn-primary{background:var(--tab-active);color:#fff;box-shadow:0 2px 10px var(--shadow);border:1.5px solid transparent}
+.btn-primary{background:"var(--tab-active)";color:#fff;box-shadow:0 2px 10px var(--shadow);border:1.5px solid transparent}
 .btn-primary:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 4px 16px var(--shadow)}
-.btn-soft{background:var(--soft);color:var(--secondary);border:1.5px solid var(--accent)}
-.btn-soft:hover{background:var(--accent);color:#fff;transform:translateY(-1px)}
+.btn-soft{background:"var(--soft)";color:"var(--secondary)";border:1.5px solid var(--accent)}
+.btn-soft:hover{background:"var(--accent)";color:#fff;transform:translateY(-1px)}
 .btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
 .btn-danger{background:#f5a6a622;color:#c0392b;border:1.5px solid #f5a6a6}
-.btn-danger:hover{background:#e57373;color:#fff}
+.btn-danger:hover{background:#e57373;color:"#fff"}
 
 /* ── INPUTS ── */
-input,select,textarea{font-family:'Nunito',sans-serif;font-size:14px;padding:9px 13px;border:2px solid var(--accent);border-radius:10px;background:var(--card);color:var(--text);outline:none;width:100%;transition:border-color .2s,background .5s}
-input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--shadow)}
+input,select,textarea{font-family:'Nunito',sans-serif;font-size:14px;padding:9px 13px;border:2px solid var(--accent);border-radius:10px;background:"var(--card)";color:"var(--text)";outline:none;width:100%;transition:border-color .2s,background .5s}
+input:focus,select:focus,textarea:focus{border-color:"var(--primary)";box-shadow:0 0 0 3px var(--shadow)}
 textarea{resize:vertical;min-height:60px}
-label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bottom:4px;margin-top:12px;font-family:'Caveat',cursive;font-size:15px}
+label{font-size:13px;color:"var(--muted)";font-weight:700;display:block;margin-bottom:4px;margin-top:12px;font-family:'Caveat',cursive;font-size:15px}
 .form-row{display:flex;gap:12px;flex-wrap:wrap}
 .form-group{flex:1;min-width:140px}
 
 /* ── CALENDAR ── */
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal-day-name{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:4px;font-family:'Caveat',cursive;font-size:14px}
-.cal-day{min-height:64px;background:var(--card);border-radius:10px;padding:4px;border:2px solid var(--soft);cursor:pointer;transition:all .15s;position:relative}
-.cal-day:hover{border-color:var(--accent);transform:scale(1.02)}
-.cal-day.today{border-color:var(--primary)!important;background:var(--soft);box-shadow:0 0 0 2px var(--accent)}
+.cal-day-name{text-align:center;font-size:12px;font-weight:700;color:"var(--muted)";padding:4px;font-family:'Caveat',cursive;font-size:14px}
+.cal-day{min-height:64px;background:"var(--card)";border-radius:10px;padding:4px;border:2px solid var(--soft);cursor:pointer;transition:all .15s;position:relative}
+.cal-day:hover{border-color:"var(--accent)";transform:scale(1.02)}
+.cal-day.today{border-color:"var(--primary)"!important;background:"var(--soft)";box-shadow:0 0 0 2px var(--accent)}
 .cal-day.other-month{opacity:.35}
-.cal-day-num{font-size:12px;font-weight:700;color:var(--muted);font-family:'Caveat',cursive;font-size:14px}
+.cal-day-num{font-size:12px;font-weight:700;color:"var(--muted)";font-family:'Caveat',cursive;font-size:14px}
 .cal-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin:1px}
 .cal-event-chip{font-size:10px;padding:1px 5px;border-radius:4px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 
 /* ── EVENTS ── */
-.event-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--soft);border-radius:12px;margin-bottom:8px;border:1px solid var(--card-border)}
-.event-date{font-size:12px;color:var(--muted);min-width:80px}
+.event-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:"var(--soft)";border-radius:12px;margin-bottom:8px;border:1px solid var(--card-border)}
+.event-date{font-size:12px;color:"var(--muted)";min-width:80px}
 .event-title{flex:1;font-weight:700}
 
 /* ── GOALS ── */
 .goal-item{margin-bottom:16px}
 .goal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .goal-name{font-weight:700}
-.goal-pct{font-size:13px;color:var(--primary);font-weight:700}
-.progress-track{height:12px;background:var(--soft);border-radius:6px;overflow:hidden;border:1px solid var(--card-border)}
-.progress-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);background:var(--progress)}
-.step-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--accent);background:var(--card);color:var(--secondary);cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .15s}
-.step-btn:hover{background:var(--accent);color:#fff}
+.goal-pct{font-size:13px;color:"var(--primary)";font-weight:700}
+.progress-track{height:12px;background:"var(--soft)";border-radius:6px;overflow:hidden;border:1px solid var(--card-border)}
+.progress-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);background:"var(--progress)"}
+.step-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--accent);background:"var(--card)";color:"var(--secondary)";cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .15s}
+.step-btn:hover{background:"var(--accent)";color:"#fff"}
 
 /* ── BOOKS / MOVIES ── */
 .book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
-.book-card{background:var(--card);border-radius:14px;overflow:hidden;border:2px solid var(--soft);transition:all .2s;cursor:pointer}
+.book-card{background:"var(--card)";border-radius:14px;overflow:hidden;border:2px solid var(--soft);transition:all .2s;cursor:pointer}
 .book-card:hover{box-shadow:0 6px 24px var(--shadow);transform:translateY(-3px) rotate(.5deg)}
-.book-cover{width:100%;height:200px;object-fit:cover;display:block;background:var(--soft)}
-.book-cover-placeholder{width:100%;height:200px;background:var(--tab-active);display:flex;align-items:center;justify-content:center;font-size:40px}
+.book-cover{width:100%;height:200px;object-fit:cover;display:block;background:"var(--soft)"}
+.book-cover-placeholder{width:100%;height:200px;background:"var(--tab-active)";display:flex;align-items:center;justify-content:center;font-size:40px}
 .book-info{padding:10px}
 .book-title-text{font-size:13px;font-weight:700;margin-bottom:2px;line-height:1.3;font-family:'Caveat',cursive;font-size:15px}
-.book-author{font-size:11px;color:var(--muted)}
+.book-author{font-size:11px;color:"var(--muted)"}
 .stars{display:flex;gap:1px}
 
 /* ── WISHLIST ── */
-.wish-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--soft);border-radius:12px;margin-bottom:8px;border:1px solid var(--card-border)}
+.wish-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:"var(--soft)";border-radius:12px;margin-bottom:8px;border:1px solid var(--card-border)}
 .wish-title{flex:1;font-weight:700}
-.wish-who{font-size:12px;color:var(--muted)}
+.wish-who{font-size:12px;color:"var(--muted)"}
 
 /* ── MOOD ── */
 .mood-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.mood-btn{padding:10px 16px;border-radius:12px;border:2px solid var(--soft);background:var(--card);cursor:pointer;font-size:20px;transition:all .15s}
-.mood-btn.active,.mood-btn:hover{border-color:var(--primary);background:var(--soft)}
+.mood-btn{padding:10px 16px;border-radius:12px;border:2px solid var(--soft);background:"var(--card)";cursor:pointer;font-size:20px;transition:all .15s}
+.mood-btn.active,.mood-btn:hover{border-color:"var(--primary)";background:"var(--soft)"}
 
 /* ── MODAL ── */
 .overlay{position:fixed;inset:0;background:#0007;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
-.modal{background:var(--card);border-radius:22px;padding:28px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 48px #00000055;border:2px solid var(--card-border);transition:background .5s}
-.modal-title{font-family:'Caveat',cursive;font-size:26px;color:var(--secondary);margin-bottom:20px;font-weight:700}
+.modal{background:"var(--card)";border-radius:22px;padding:28px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 48px #00000055;border:2px solid var(--card-border);transition:background .5s}
+.modal-title{font-family:'Caveat',cursive;font-size:26px;color:"var(--secondary)";margin-bottom:20px;font-weight:700}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
 
 /* ── TABS ── */
 .tab-row{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.tab-pill{padding:7px 16px;border-radius:20px;border:2px solid var(--soft);background:var(--card);cursor:pointer;font-size:13px;font-weight:700;transition:all .18s;color:var(--muted);font-family:'Caveat',cursive;font-size:15px}
-.tab-pill.active{background:var(--tab-active);color:#fff;border-color:transparent;box-shadow:0 2px 8px var(--shadow)}
+.tab-pill{padding:7px 16px;border-radius:20px;border:2px solid var(--soft);background:"var(--card)";cursor:pointer;font-size:13px;font-weight:700;transition:all .18s;color:"var(--muted)";font-family:'Caveat',cursive;font-size:15px}
+.tab-pill.active{background:"var(--tab-active)";color:#fff;border-color:transparent;box-shadow:0 2px 8px var(--shadow)}
 
 /* ── MISC ── */
-.empty{text-align:center;color:var(--muted);padding:40px;font-size:15px}
+.empty{text-align:center;color:"var(--muted)";padding:40px;font-size:15px}
 .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 .divider{border:none;border-top:2px dashed var(--soft);margin:20px 0}
 
@@ -453,14 +453,14 @@ label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bot
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--soft)}
-::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+::-webkit-scrollbar-track{background:"var(--soft)"}
+::-webkit-scrollbar-thumb{background:"var(--accent)";border-radius:3px}
 
 /* ── LOGIN SCREEN ── */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px;transition:background .6s}
-.login-card{background:var(--card);border-radius:24px;padding:40px 36px;max-width:360px;width:100%;text-align:center;border:2px solid var(--card-border);box-shadow:0 8px 40px var(--shadow)}
-.login-title{font-family:'Dancing Script',cursive;font-size:42px;color:var(--secondary);margin-bottom:6px}
-.login-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:"var(--bg)";padding:20px;transition:background .6s}
+.login-card{background:"var(--card)";border-radius:24px;padding:40px 36px;max-width:360px;width:100%;text-align:center;border:2px solid var(--card-border);box-shadow:0 8px 40px var(--shadow)}
+.login-title{font-family:'Dancing Script',cursive;font-size:42px;color:"var(--secondary)";margin-bottom:6px}
+.login-sub{font-size:14px;color:"var(--muted)";margin-bottom:28px}
 .login-input{font-size:18px;text-align:center;letter-spacing:4px;border-radius:14px;padding:12px}
 .login-err{color:#e07a9f;font-size:13px;margin-top:8px;height:18px}
 
@@ -519,7 +519,7 @@ function CalendarPage({ events, setEvents }) {
         <div className="card" style={{flex:"1 1 380px"}}>
           <div className="cal-header">
             <button className="btn btn-soft btn-sm" onClick={()=>{if(month===0){setMonth(11);setYear(y=>y-1)}else setMonth(m=>m-1)}}>‹</button>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:var(--secondary)}}>{year}年 {MONTHS[month]}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"var(--secondary)"}}>{year}年 {MONTHS[month]}</span>
             <button className="btn btn-soft btn-sm" onClick={()=>{if(month===11){setMonth(0);setYear(y=>y+1)}else setMonth(m=>m+1)}}>›</button>
           </div>
           <div className="cal-grid">
@@ -535,7 +535,7 @@ function CalendarPage({ events, setEvents }) {
                   {dayEvs.slice(0,2).map(e=>(
                     <div key={e.id} className="cal-event-chip" style={{background:whoColor(e.who)+"33",color:whoColor(e.who)}}>{e.title}</div>
                   ))}
-                  {dayEvs.length>2&&<div style={{fontSize:10,color:var(--muted)}}>+{dayEvs.length-2}</div>}
+                  {dayEvs.length>2&&<div style={{fontSize:10,color:"var(--muted)"}}>+{dayEvs.length-2}</div>}
                 </div>
               );
             })}
@@ -635,7 +635,7 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
       {total>0&&(
         <div className="card" style={{marginBottom:20}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:var(--secondary)}}>今日整體進度</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"var(--secondary)"}}>今日整體進度</span>
             <span style={{fontSize:22,fontWeight:700,color:overallPct===100?COLORS.green:COLORS.primary}}>
               {overallPct===100?"🎉 全部完成！":`${overallPct}%`}
             </span>
@@ -650,7 +650,7 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
               transition:"width .5s cubic-bezier(.4,0,.2,1)"
             }}/>
           </div>
-          <div style={{fontSize:13,color:var(--muted),marginTop:8,textAlign:"right"}}>
+          <div style={{fontSize:13,color:"var(--muted)",marginTop:8,textAlign:"right"}}>
             已完成 {doneCount} / {total} 個目標
           </div>
         </div>
@@ -693,8 +693,8 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
               }}>{g.name}</div>
               <div style={{display:"flex",gap:8,alignItems:"center",marginTop:3}}>
                 <span className={`badge badge-${g.who}`}>{whoLabel(g.who)}</span>
-                {g.deadline&&<span style={{fontSize:11,color:var(--muted)}}>截止 {g.deadline}</span>}
-                {g.done&&<span style={{fontSize:12,color:#52b788,fontWeight:700}}>完成 ✅</span>}
+                {g.deadline&&<span style={{fontSize:11,color:"var(--muted)"}}>截止 {g.deadline}</span>}
+                {g.done&&<span style={{fontSize:12,color:"#52b788",fontWeight:700}}>完成 ✅</span>}
               </div>
             </div>
             <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個目標嗎？"))del(g.id);}}>🗑️</button>
@@ -827,7 +827,7 @@ function BookModal({ book, onClose, onSave }) {
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           {/* Cover preview */}
           <div style={{flexShrink:0}}>
-            <div style={{width:90,height:126,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            <div style={{width:90,height:126,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
               {coverPreview
                 ? <img src={coverPreview} alt="cover" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setCoverPreview("")}/>
                 : <span style={{fontSize:36}}>{searching?"⏳":"📚"}</span>
@@ -853,12 +853,12 @@ function BookModal({ book, onClose, onSave }) {
         {/* Candidate picker */}
         {candidates.length > 1 && (
           <div style={{marginTop:12}}>
-            <div style={{fontSize:12,color:var(--muted),marginBottom:8,fontWeight:700}}>選擇封面（滑動查看更多）</div>
+            <div style={{fontSize:12,color:"var(--muted)",marginBottom:8,fontWeight:700}}>選擇封面（滑動查看更多）</div>
             <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
               {candidates.map((c,i)=>(
                 <div key={i} onClick={()=>pickCandidate(c)} style={{flexShrink:0,cursor:"pointer",textAlign:"center",border:`2px solid ${coverPreview===c.cover?COLORS.primary:COLORS.soft}`,borderRadius:8,padding:4,background:coverPreview===c.cover?COLORS.soft:"#fff",transition:"all .15s"}}>
                   <img src={c.cover} alt={c.title} style={{width:60,height:85,objectFit:"cover",borderRadius:5,display:"block"}} onError={e=>e.target.closest("div").style.display="none"}/>
-                  <div style={{fontSize:9,color:var(--muted),marginTop:3,maxWidth:64,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
+                  <div style={{fontSize:9,color:"var(--muted)",marginTop:3,maxWidth:64,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
                 </div>
               ))}
             </div>
@@ -947,7 +947,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
                     <Stars n={b.rating}/>
                     <span className={`badge badge-${b.who}`}>{whoLabel(b.who)}</span>
                   </div>
-                  {b.finishedAt&&<div style={{fontSize:11,color:var(--muted),marginTop:4}}>✅ {b.finishedAt}</div>}
+                  {b.finishedAt&&<div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>✅ {b.finishedAt}</div>}
                 </div>
               </div>
             ))}
@@ -982,17 +982,17 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             <div style={{display:"flex",gap:16,marginBottom:16}}>
               {detail.coverUrl
                 ? <img src={detail.coverUrl} alt={detail.title} style={{width:90,height:130,objectFit:"cover",borderRadius:10}} onError={e=>e.target.style.display="none"}/>
-                : <div style={{width:90,height:130,background:var(--soft),borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>📚</div>
+                : <div style={{width:90,height:130,background:"var(--soft)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>📚</div>
               }
               <div>
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
-                <div style={{color:var(--muted),fontSize:14}}>{detail.author}</div>
+                <div style={{color:"var(--muted)",fontSize:14}}>{detail.author}</div>
                 <Stars n={detail.rating}/>
                 <div style={{marginTop:8}}><span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span></div>
-                {detail.finishedAt&&<div style={{fontSize:13,color:var(--muted),marginTop:6}}>完成日：{detail.finishedAt}</div>}
+                {detail.finishedAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>完成日：{detail.finishedAt}</div>}
               </div>
             </div>
-            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,color:var(--text),lineHeight:1.8}}>{detail.review}</div></>}
+            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,color:"var(--text)",lineHeight:1.8}}>{detail.review}</div></>}
             <div className="modal-actions">
               <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這本書嗎？")){delBook(detail.id)}}}>刪除</button>
               <button className="btn btn-soft" onClick={()=>{setEditBook(detail);setDetail(null);setShowBook(true)}}>編輯</button>
@@ -1050,12 +1050,12 @@ function MemoryPage({ notes, setNotes }) {
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
                 <div style={{fontSize:24,marginBottom:4}}>{n.mood}</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:var(--secondary)}}>{n.title}</div>
-                <div style={{fontSize:12,color:var(--muted)}}>{n.date} · {whoLabel(n.who)}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"var(--secondary)"}}>{n.title}</div>
+                <div style={{fontSize:12,color:"var(--muted)"}}>{n.date} · {whoLabel(n.who)}</div>
               </div>
               <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這則回憶嗎？"))del(n.id);}}>🗑️</button>
             </div>
-            {n.content&&<div style={{marginTop:10,fontSize:14,lineHeight:1.8,color:var(--text)}}>{n.content}</div>}
+            {n.content&&<div style={{marginTop:10,fontSize:14,lineHeight:1.8,color:"var(--text)"}}>{n.content}</div>}
           </div>
         ))}
       </div>
@@ -1136,13 +1136,13 @@ function MovieModal({ movie, onClose, onSave }) {
         <div className="modal-title">{movie?"編輯電影":"新增電影"}</div>
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           <div style={{flexShrink:0,textAlign:"center"}}>
-            <div style={{width:90,height:130,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            <div style={{width:90,height:130,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
               {posterPreview
                 ? <img src={posterPreview} alt="poster" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setPosterPreview("")}/>
                 : <span style={{fontSize:32}}>{searching?"⏳":"🎬"}</span>}
               {searching&&<div style={{position:"absolute",inset:0,background:"#fff8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>⏳</div>}
             </div>
-            {posterPreview&&<div style={{fontSize:10,color:#52b788,marginTop:4}}>✓ 自動取得</div>}
+            {posterPreview&&<div style={{fontSize:10,color:"#52b788",marginTop:4}}>✓ 自動取得</div>}
           </div>
           <div style={{flex:1}}>
             <label>電影名稱（輸入後自動搜尋）</label>
@@ -1234,7 +1234,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                   <Stars n={m.rating}/>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
                     <span className={`badge badge-${m.who}`} style={{fontSize:10}}>{whoLabel(m.who)}</span>
-                    {m.watchedAt&&<span style={{fontSize:10,color:var(--muted)}}>{m.watchedAt}</span>}
+                    {m.watchedAt&&<span style={{fontSize:10,color:"var(--muted)"}}>{m.watchedAt}</span>}
                   </div>
                 </div>
               </div>
@@ -1279,7 +1279,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
                 <Stars n={detail.rating}/>
                 <span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span>
-                {detail.watchedAt&&<div style={{fontSize:13,color:var(--muted),marginTop:6}}>觀看日：{detail.watchedAt}</div>}
+                {detail.watchedAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>觀看日：{detail.watchedAt}</div>}
               </div>
             </div>
             {detail.review&&<><hr className="divider"/><div style={{fontSize:14,lineHeight:1.8}}>{detail.review}</div></>}
@@ -1299,13 +1299,13 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-title">加入想看清單</div>
             <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-              <div style={{width:70,height:100,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:70,height:100,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {wishPoster?<img src={wishPoster} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:24}}>{wishSearching?"⏳":"🎬"}</span>}
               </div>
               <div style={{flex:1}}>
                 <label>電影名稱</label>
                 <input value={wishForm.title} onChange={handleWishTitle} placeholder="輸入名稱自動搜尋…"/>
-                {wishSearching&&<div style={{fontSize:11,color:var(--primary),marginTop:3}}>🔍 搜尋中…</div>}
+                {wishSearching&&<div style={{fontSize:11,color:"var(--primary)",marginTop:3}}>🔍 搜尋中…</div>}
               </div>
             </div>
             <label>誰想看</label>
@@ -1366,10 +1366,10 @@ function MemoPage({ memos, setMemos }) {
           <div key={m.id} className="card" style={{breakInside:"avoid",marginBottom:16,borderLeft:`4px solid ${whoColor(m.who)}`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
               <div>
-                {m.title&&<div style={{fontFamily:"'Caveat',cursive",fontSize:18,fontWeight:700,color:var(--secondary)}}>{m.title}</div>}
+                {m.title&&<div style={{fontFamily:"'Caveat',cursive",fontSize:18,fontWeight:700,color:"var(--secondary)"}}>{m.title}</div>}
                 <div style={{display:"flex",gap:6,alignItems:"center",marginTop:2}}>
                   <span className={`badge badge-${m.who}`}>{whoLabel(m.who)}</span>
-                  <span style={{fontSize:11,color:var(--muted)}}>{m.updatedAt}</span>
+                  <span style={{fontSize:11,color:"var(--muted)"}}>{m.updatedAt}</span>
                 </div>
               </div>
               <div style={{display:"flex",gap:6}}>
@@ -1377,7 +1377,7 @@ function MemoPage({ memos, setMemos }) {
                 <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這則備忘錄嗎？"))del(m.id);}}>🗑️</button>
               </div>
             </div>
-            {m.content&&<div style={{fontSize:14,lineHeight:1.8,color:var(--text),marginBottom:8,whiteSpace:"pre-wrap"}}>{m.content}</div>}
+            {m.content&&<div style={{fontSize:14,lineHeight:1.8,color:"var(--text)",marginBottom:8,whiteSpace:"pre-wrap"}}>{m.content}</div>}
             {m.photos?.length>0&&(
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {m.photos.map(p=>(
@@ -2100,20 +2100,20 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Today's events */}
         <div className="card">
           <div className="card-title">📅 今日行程</div>
-          {todayEvs.length===0?<div style={{color:var(--muted),fontSize:14}}>今天沒有行程，好好休息 ☁️</div>
+          {todayEvs.length===0?<div style={{color:"var(--muted)",fontSize:14}}>今天沒有行程，好好休息 ☁️</div>
             :todayEvs.map(e=>(
               <div key={e.id} className="event-item" style={{padding:"8px 10px",marginBottom:6}}>
                 <div style={{width:8,height:8,borderRadius:"50%",background:whoColor(e.who)}}/>
-                <div style={{flex:1}}>{e.time&&<span style={{fontSize:12,color:var(--muted),marginRight:8}}>{e.time}</span>}{e.title}</div>
+                <div style={{flex:1}}>{e.time&&<span style={{fontSize:12,color:"var(--muted)",marginRight:8}}>{e.time}</span>}{e.title}</div>
                 <span className={`badge badge-${e.who}`}>{whoLabel(e.who)}</span>
               </div>
             ))
           }
           {upcomingEvs.length>0&&<>
-            <div style={{fontSize:12,color:var(--muted),fontWeight:700,margin:"12px 0 6px"}}>即將到來</div>
+            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700,margin:"12px 0 6px"}}>即將到來</div>
             {upcomingEvs.map(e=>(
-              <div key={e.id} style={{fontSize:13,color:var(--text),padding:"4px 0",display:"flex",gap:8,alignItems:"center"}}>
-                <span style={{color:var(--muted),minWidth:70}}>{e.date}</span>{e.title}
+              <div key={e.id} style={{fontSize:13,color:"var(--text)",padding:"4px 0",display:"flex",gap:8,alignItems:"center"}}>
+                <span style={{color:"var(--muted)",minWidth:70}}>{e.date}</span>{e.title}
               </div>
             ))}
           </>}
@@ -2122,7 +2122,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Goals summary */}
         <div className="card">
           <div className="card-title">🎯 目標進度</div>
-          {activeGoals.length===0?<div style={{color:var(--muted),fontSize:14}}>還沒有目標！</div>
+          {activeGoals.length===0?<div style={{color:"var(--muted)",fontSize:14}}>還沒有目標！</div>
             :(() => {
               const total = goals.length;
               const doneCount = goals.filter(g=>g.done).length;
@@ -2130,7 +2130,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
               return (
                 <>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                    <span style={{fontSize:13,color:var(--muted)}}>已完成 {doneCount} / {total} 個</span>
+                    <span style={{fontSize:13,color:"var(--muted)"}}>已完成 {doneCount} / {total} 個</span>
                     <span style={{fontSize:15,fontWeight:700,color:pct===100?COLORS.green:COLORS.primary}}>{pct===100?"🎉 全完成！":`${pct}%`}</span>
                   </div>
                   <div className="progress-track" style={{height:14,borderRadius:7,marginBottom:14}}>
@@ -2154,14 +2154,14 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Currently reading */}
         <div className="card">
           <div className="card-title">📖 正在閱讀</div>
-          {readingNow.length===0?<div style={{color:var(--muted),fontSize:14}}>快去找本書讀吧！</div>
+          {readingNow.length===0?<div style={{color:"var(--muted)",fontSize:14}}>快去找本書讀吧！</div>
             :readingNow.map(b=>(
               <div key={b.id} style={{display:"flex",gap:10,marginBottom:12,alignItems:"center"}}>
                 {b.coverUrl?<img src={b.coverUrl} style={{width:36,height:50,objectFit:"cover",borderRadius:4}} alt={b.title} onError={e=>e.target.style.display="none"}/>
-                  :<div style={{width:36,height:50,background:var(--soft),borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>📚</div>}
+                  :<div style={{width:36,height:50,background:"var(--soft)",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>📚</div>}
                 <div>
                   <div style={{fontSize:13,fontWeight:700}}>{b.title}</div>
-                  <div style={{fontSize:11,color:var(--muted)}}>{b.author}</div>
+                  <div style={{fontSize:11,color:"var(--muted)"}}>{b.author}</div>
                   <span className={`badge badge-${b.who}`} style={{marginTop:2}}>{whoLabel(b.who)}</span>
                 </div>
               </div>
@@ -2172,13 +2172,13 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Recent memories */}
         <div className="card">
           <div className="card-title">💌 最近回憶</div>
-          {notes.length===0?<div style={{color:var(--muted),fontSize:14}}>記錄你們的美好時光！</div>
+          {notes.length===0?<div style={{color:"var(--muted)",fontSize:14}}>記錄你們的美好時光！</div>
             :notes.slice(0,3).map(n=>(
               <div key={n.id} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
                 <span style={{fontSize:20}}>{n.mood}</span>
                 <div>
                   <div style={{fontSize:13,fontWeight:700}}>{n.title}</div>
-                  <div style={{fontSize:11,color:var(--muted)}}>{n.date}</div>
+                  <div style={{fontSize:11,color:"var(--muted)"}}>{n.date}</div>
                 </div>
               </div>
             ))
@@ -2203,7 +2203,7 @@ const TABS = [
   { id:"memory",   label:"💌", name:"回憶日記" },
 ];
 
-export default function App() {
+function App() {
   const mode = useTimeMode();
   const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY)==="1");
   const [lpBg] = useState(window._LP_BG||null);
