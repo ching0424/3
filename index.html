@@ -14,18 +14,17 @@
       align-items:center;justify-content:center;gap:18px;
       background:linear-gradient(170deg,#020818,#0a1240);
       font-family:'Georgia',serif;color:#ddeeff;z-index:9999;
-      transition:opacity .5s;
+      transition:opacity .6s;
     }
-    #splash h1{font-size:32px;margin:0;letter-spacing:2px}
-    #splash p{font-size:14px;opacity:.7;margin:0}
-    .spin{width:42px;height:42px;border:4px solid #1e2d5a;
+    #splash h1{font-size:30px;margin:0;letter-spacing:3px;font-style:italic}
+    #splash p{font-size:13px;opacity:.6;margin:0;letter-spacing:1px}
+    .spin{width:42px;height:42px;border:3px solid #1e2d5a;
       border-top-color:#6c8fd4;border-radius:50%;
       animation:sp .8s linear infinite}
     @keyframes sp{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
-
 <div id="splash">
   <h1>7ing &amp; KM ✨</h1>
   <div class="spin"></div>
@@ -33,19 +32,16 @@
 </div>
 <div id="root"></div>
 
-<!-- Firebase 9 compat (global firebase object, no ES modules) -->
+<!-- Firebase 9 compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- React 18 UMD -->
+<!-- React 18 -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-<!-- Babel (transpiles JSX to JS in browser) -->
+<!-- Babel -->
 <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
 
-<script type="text/babel" data-type="module">
-/* global React, ReactDOM, firebase */
+<script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
 
@@ -62,12 +58,12 @@ const FB_CFG = {
 const KEYS = {
   events:"couple/events", goals:"couple/goals", goalLog:"couple/goalLog",
   books:"couple/books", wishlist:"couple/wishlist", notes:"couple/notes",
-  movies:"couple/movies", mwishlist:"couple/mwishlist", memos:"couple/memos",
+  movies:"couple/movies", mwishlist:"couple/mwishlist",
+  memos:"couple/memos", food:"couple/food",
 };
 let _db=null;
 function getDB(){
   if(_db) return _db;
-  if(!window.firebase) { console.error("Firebase not loaded"); return null; }
   if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
   _db=firebase.database(); return _db;
 }
@@ -102,10 +98,14 @@ function useTimeMode() {
 }
 
 // ─── Night Sky Banner ─────────────────────────────────────────────────────────
-const STARS = Array.from({length:90}, (_,i) => ({
-  id:i, x:((i*137.508)%100).toFixed(2), y:((i*97.31)%68).toFixed(2),
-  r:(0.4+(i%4)*0.45).toFixed(2), dur:(1.4+(i%6)*0.7).toFixed(1), delay:((i%8)*0.45).toFixed(1),
-  bright: i%7===0,
+const STARS = Array.from({length:120}, (_,i) => ({
+  id:i,
+  x:((i*137.508)%100).toFixed(2),
+  y:((i*97.31)%72).toFixed(2),
+  r:(0.1+(i%3)*0.1).toFixed(2),   // tiny: 0.1–0.3 only
+  dur:(1.2+(i%7)*0.6).toFixed(1),
+  delay:((i%11)*0.35).toFixed(2),
+  bright: i%15===0,                // fewer "bright" ones
 }));
 const METEORS = [
   {x1:10,y1:6,x2:38,y2:24,dur:3.0,delay:5},
@@ -138,15 +138,11 @@ function NightSkyBanner({ lpBg }) {
           ))}
         </defs>
         {STARS.map(s=>(
-          <g key={s.id}>
-            {s.bright && <circle cx={s.x} cy={s.y} r={Number(s.r)*2.5} fill="white" filter="url(#sg)" opacity="0.15">
-              <animate attributeName="opacity" values="0.05;0.25;0.05" dur={s.dur+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
-            </circle>}
-            <circle cx={s.x} cy={s.y} r={s.r} fill="white">
-              <animate attributeName="opacity" values="0.3;1;0.3" dur={s.dur+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
-              <animate attributeName="r" values={s.r+";"+Number(s.r)*1.6+";"+s.r} dur={(Number(s.dur)*1.4).toFixed(1)+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
-            </circle>
-          </g>
+          <circle key={s.id} cx={s.x} cy={s.y} r={s.r} fill="white">
+            <animate attributeName="opacity"
+              values={s.bright?"0.1;1;0.2;0.8;0.1":"0.1;0.8;0.1"}
+              dur={s.dur+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
+          </circle>
         ))}
         {METEORS.map((m,i)=>(
           <g key={i}>
@@ -187,6 +183,26 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 function uid() { return Math.random().toString(36).slice(2,9); }
+
+// ─── Confirm Delete ───────────────────────────────────────────────────────────
+function useConfirm() {
+  const [state, setState] = useState({ open:false, msg:"", resolve:null });
+  const ask = (msg) => new Promise(res => setState({ open:true, msg, resolve:res }));
+  const answer = (yes) => { state.resolve(yes); setState({ open:false, msg:"", resolve:null }); };
+  const Dialog = state.open ? (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+      <div style={{background:"var(--card)",borderRadius:20,padding:"28px 32px",maxWidth:320,width:"90%",textAlign:"center",border:"2px solid var(--card-border)",boxShadow:"0 8px 40px rgba(0,0,0,0.4)"}}>
+        <div style={{fontSize:32,marginBottom:12}}>🗑️</div>
+        <div style={{fontFamily:"'Noto Sans TC',sans-serif",fontSize:16,color:"var(--text)",marginBottom:20,lineHeight:1.6}}>{state.msg}</div>
+        <div style={{display:"flex",gap:12,justifyContent:"center"}}>
+          <button className="btn btn-soft" style={{minWidth:80}} onClick={()=>answer(false)}>取消</button>
+          <button className="btn btn-danger" style={{minWidth:80,background:"#e57373",color:"#fff"}} onClick={()=>answer(true)}>刪除</button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+  return { ask, Dialog };
+}
 function Stars({ n, onChange }) {
   return (
     <div className="stars">
@@ -218,11 +234,11 @@ const COLORS = {
 
 // ─── CSS ────────────────────────────────────────────────────────────────────
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:wght@400;600;700&family=Dancing+Script:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:wght@400;600;700&family=Dancing+Script:wght@700&family=Noto+Sans+TC:wght@300;400;500;700&family=ZCOOL+KuaiLe&display=swap');
 
 /* ── Reset & base ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Nunito',sans-serif;color:var(--text);background:var(--bg);transition:background .6s,color .4s;min-height:100vh}
+body{font-family:'Noto Sans TC','Nunito',sans-serif;color:var(--text);background:var(--bg);transition:background .6s,color .4s;min-height:100vh}
 h1,h2,h3{font-family:'Caveat',cursive}
 .app{min-height:100vh;padding-bottom:40px}
 
@@ -261,7 +277,7 @@ body.night-mode {
 }
 
 /* ── NAV ── */
-.nav{background:var(--nav-bg);padding:0 24px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 4px 16px var(--shadow);border-bottom:3px solid var(--nav-border);transition:background .6s}
+.nav{background:var(--nav-bg);padding:0 20px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;box-shadow:0 4px 16px var(--shadow);border-bottom:3px solid var(--nav-border);transition:background .6s}
 .nav-logo{font-family:'Dancing Script',cursive;color:#fff;font-size:24px;font-weight:700;padding:14px 20px 14px 0;letter-spacing:1px;white-space:nowrap;text-shadow:0 1px 8px #0003}
 .nav-logo span{color:var(--accent)}
 .nav-tab{padding:16px 18px;color:#fff9;cursor:pointer;font-size:14px;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;letter-spacing:.5px}
@@ -277,6 +293,18 @@ body.night-mode {
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--progress)}
 /* hand-drawn card border effect */
 .card::after{content:'';position:absolute;inset:3px;border-radius:16px;border:1.5px dashed var(--soft);pointer-events:none;opacity:.5}
+/* Night mode extra polish */
+body.night-mode .card{box-shadow:0 4px 24px rgba(0,20,80,0.5),0 0 0 1px rgba(100,140,255,0.08)}
+body.night-mode .card::before{background:linear-gradient(90deg,#2a3a8a,#6c8fd4,#a0b8f0,#2a3a8a)}
+body.night-mode .card::after{border-color:rgba(100,140,255,0.25);opacity:.8}
+body.night-mode .btn-primary{box-shadow:0 2px 12px rgba(108,143,212,0.4)}
+body.night-mode .tab-pill{border-color:rgba(100,140,255,0.2)}
+body.night-mode input,body.night-mode select,body.night-mode textarea{background:rgba(255,255,255,0.05);border-color:rgba(100,140,255,0.3)}
+body.night-mode .modal{box-shadow:0 8px 60px rgba(0,0,40,0.8),0 0 80px rgba(30,60,140,0.2);border-color:rgba(100,140,255,0.25)}
+body.night-mode .nav{border-bottom-color:rgba(100,140,255,0.3)}
+body.night-mode .cal-day{border-color:rgba(100,140,255,0.15);background:rgba(255,255,255,0.03)}
+body.night-mode .event-item{background:rgba(255,255,255,0.05);border-color:rgba(100,140,255,0.15)}
+body.night-mode .page-title{text-shadow:0 0 20px rgba(108,143,212,0.4)}
 
 .card-title{font-family:'Caveat',cursive;font-size:22px;color:var(--secondary);margin-bottom:16px;font-weight:700}
 
@@ -397,6 +425,7 @@ label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bot
 // CALENDAR PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 function CalendarPage({ events, setEvents }) {
+  const confirmDel = useConfirm();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -438,7 +467,7 @@ function CalendarPage({ events, setEvents }) {
         <div className="card" style={{flex:"1 1 380px"}}>
           <div className="cal-header">
             <button className="btn btn-soft btn-sm" onClick={()=>{if(month===0){setMonth(11);setYear(y=>y-1)}else setMonth(m=>m-1)}}>‹</button>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:COLORS.secondary}}>{year}年 {MONTHS[month]}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:var(--secondary)}}>{year}年 {MONTHS[month]}</span>
             <button className="btn btn-soft btn-sm" onClick={()=>{if(month===11){setMonth(0);setYear(y=>y+1)}else setMonth(m=>m+1)}}>›</button>
           </div>
           <div className="cal-grid">
@@ -454,7 +483,7 @@ function CalendarPage({ events, setEvents }) {
                   {dayEvs.slice(0,2).map(e=>(
                     <div key={e.id} className="cal-event-chip" style={{background:whoColor(e.who)+"33",color:whoColor(e.who)}}>{e.title}</div>
                   ))}
-                  {dayEvs.length>2&&<div style={{fontSize:10,color:COLORS.muted}}>+{dayEvs.length-2}</div>}
+                  {dayEvs.length>2&&<div style={{fontSize:10,color:var(--muted)}}>+{dayEvs.length-2}</div>}
                 </div>
               );
             })}
@@ -474,7 +503,7 @@ function CalendarPage({ events, setEvents }) {
                 <div className="event-title">{e.title}</div>
                 <span className={`badge badge-${e.who}`}>{e.who==="her"?"7ing":e.who==="him"?"KM":"共同"}</span>
                 <button className="btn btn-sm btn-soft" onClick={()=>openEdit(e)}>✏️</button>
-                <button className="btn btn-sm btn-danger" onClick={()=>del(e.id)}>✕</button>
+                <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個行程嗎？"))del(e.id);}}>🗑️</button>
               </div>
             ))}
           </div>
@@ -490,6 +519,7 @@ function CalendarPage({ events, setEvents }) {
         </div>
       </div>
 
+      {confirmDel.Dialog}
       {showModal&&(
         <div className="overlay" onClick={()=>setShowModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -523,6 +553,7 @@ function CalendarPage({ events, setEvents }) {
 // GOALS PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
+  const confirmDel = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name:"", who:"both", deadline:"" });
   const [tab, setTab] = useState("all");
@@ -552,7 +583,7 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
       {total>0&&(
         <div className="card" style={{marginBottom:20}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:COLORS.secondary}}>今日整體進度</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:var(--secondary)}}>今日整體進度</span>
             <span style={{fontSize:22,fontWeight:700,color:overallPct===100?COLORS.green:COLORS.primary}}>
               {overallPct===100?"🎉 全部完成！":`${overallPct}%`}
             </span>
@@ -567,7 +598,7 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
               transition:"width .5s cubic-bezier(.4,0,.2,1)"
             }}/>
           </div>
-          <div style={{fontSize:13,color:COLORS.muted,marginTop:8,textAlign:"right"}}>
+          <div style={{fontSize:13,color:var(--muted),marginTop:8,textAlign:"right"}}>
             已完成 {doneCount} / {total} 個目標
           </div>
         </div>
@@ -610,15 +641,16 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
               }}>{g.name}</div>
               <div style={{display:"flex",gap:8,alignItems:"center",marginTop:3}}>
                 <span className={`badge badge-${g.who}`}>{whoLabel(g.who)}</span>
-                {g.deadline&&<span style={{fontSize:11,color:COLORS.muted}}>截止 {g.deadline}</span>}
-                {g.done&&<span style={{fontSize:12,color:COLORS.green,fontWeight:700}}>完成 ✅</span>}
+                {g.deadline&&<span style={{fontSize:11,color:var(--muted)}}>截止 {g.deadline}</span>}
+                {g.done&&<span style={{fontSize:12,color:#52b788,fontWeight:700}}>完成 ✅</span>}
               </div>
             </div>
-            <button className="btn btn-sm btn-danger" onClick={()=>del(g.id)}>✕</button>
+            <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個目標嗎？"))del(g.id);}}>🗑️</button>
           </div>
         </div>
       ))}
 
+      {confirmDel.Dialog}
       {/* ── Daily History Log ── */}
       {goalLog.length>0&&(
         <div className="card" style={{marginTop:8}}>
@@ -743,7 +775,7 @@ function BookModal({ book, onClose, onSave }) {
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           {/* Cover preview */}
           <div style={{flexShrink:0}}>
-            <div style={{width:90,height:126,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:COLORS.soft,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            <div style={{width:90,height:126,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
               {coverPreview
                 ? <img src={coverPreview} alt="cover" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setCoverPreview("")}/>
                 : <span style={{fontSize:36}}>{searching?"⏳":"📚"}</span>
@@ -769,12 +801,12 @@ function BookModal({ book, onClose, onSave }) {
         {/* Candidate picker */}
         {candidates.length > 1 && (
           <div style={{marginTop:12}}>
-            <div style={{fontSize:12,color:COLORS.muted,marginBottom:8,fontWeight:700}}>選擇封面（滑動查看更多）</div>
+            <div style={{fontSize:12,color:var(--muted),marginBottom:8,fontWeight:700}}>選擇封面（滑動查看更多）</div>
             <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
               {candidates.map((c,i)=>(
                 <div key={i} onClick={()=>pickCandidate(c)} style={{flexShrink:0,cursor:"pointer",textAlign:"center",border:`2px solid ${coverPreview===c.cover?COLORS.primary:COLORS.soft}`,borderRadius:8,padding:4,background:coverPreview===c.cover?COLORS.soft:"#fff",transition:"all .15s"}}>
                   <img src={c.cover} alt={c.title} style={{width:60,height:85,objectFit:"cover",borderRadius:5,display:"block"}} onError={e=>e.target.closest("div").style.display="none"}/>
-                  <div style={{fontSize:9,color:COLORS.muted,marginTop:3,maxWidth:64,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
+                  <div style={{fontSize:9,color:var(--muted),marginTop:3,maxWidth:64,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
                 </div>
               ))}
             </div>
@@ -814,6 +846,7 @@ function BookModal({ book, onClose, onSave }) {
 }
 
 function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
+  const confirmDel = useConfirm();
   const [tab, setTab] = useState("reading");
   const [showBook, setShowBook] = useState(false);
   const [editBook, setEditBook] = useState(null);
@@ -862,7 +895,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
                     <Stars n={b.rating}/>
                     <span className={`badge badge-${b.who}`}>{whoLabel(b.who)}</span>
                   </div>
-                  {b.finishedAt&&<div style={{fontSize:11,color:COLORS.muted,marginTop:4}}>✅ {b.finishedAt}</div>}
+                  {b.finishedAt&&<div style={{fontSize:11,color:var(--muted),marginTop:4}}>✅ {b.finishedAt}</div>}
                 </div>
               </div>
             ))}
@@ -883,12 +916,13 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
               </div>
               <span className={`badge badge-${w.who}`}>{whoLabel(w.who)}</span>
               <button className="btn btn-sm btn-soft" onClick={()=>moveToReading(w)}>開始讀</button>
-              <button className="btn btn-sm btn-danger" onClick={()=>delWish(w.id)}>✕</button>
+              <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要從願望清單移除嗎？"))delWish(w.id);}}>🗑️</button>
             </div>
           ))}
         </>
       )}
 
+      {confirmDel.Dialog}
       {/* Detail Modal */}
       {detail&&(
         <div className="overlay" onClick={()=>setDetail(null)}>
@@ -896,19 +930,19 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             <div style={{display:"flex",gap:16,marginBottom:16}}>
               {detail.coverUrl
                 ? <img src={detail.coverUrl} alt={detail.title} style={{width:90,height:130,objectFit:"cover",borderRadius:10}} onError={e=>e.target.style.display="none"}/>
-                : <div style={{width:90,height:130,background:COLORS.soft,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>📚</div>
+                : <div style={{width:90,height:130,background:var(--soft),borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>📚</div>
               }
               <div>
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
-                <div style={{color:COLORS.muted,fontSize:14}}>{detail.author}</div>
+                <div style={{color:var(--muted),fontSize:14}}>{detail.author}</div>
                 <Stars n={detail.rating}/>
                 <div style={{marginTop:8}}><span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span></div>
-                {detail.finishedAt&&<div style={{fontSize:13,color:COLORS.muted,marginTop:6}}>完成日：{detail.finishedAt}</div>}
+                {detail.finishedAt&&<div style={{fontSize:13,color:var(--muted),marginTop:6}}>完成日：{detail.finishedAt}</div>}
               </div>
             </div>
-            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,color:COLORS.text,lineHeight:1.8}}>{detail.review}</div></>}
+            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,color:var(--text),lineHeight:1.8}}>{detail.review}</div></>}
             <div className="modal-actions">
-              <button className="btn btn-danger btn-sm" onClick={()=>delBook(detail.id)}>刪除</button>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這本書嗎？")){delBook(detail.id)}}}>刪除</button>
               <button className="btn btn-soft" onClick={()=>{setEditBook(detail);setDetail(null);setShowBook(true)}}>編輯</button>
               <button className="btn btn-primary" onClick={()=>setDetail(null)}>關閉</button>
             </div>
@@ -944,6 +978,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
 // ═══════════════════════════════════════════════════════════════════════════
 const MOODS = ["😊","😍","🥰","😌","😄","🥺","😴","😤","🤗"];
 function MemoryPage({ notes, setNotes }) {
+  const confirmDel = useConfirm();
   const [form, setForm] = useState({ title:"", content:"", mood:"😊", date:today(), who:"both" });
   const [show, setShow] = useState(false);
   const whoLabel = w=>w==="her"?"7ing":w==="him"?"KM":"一起";
@@ -955,6 +990,7 @@ function MemoryPage({ notes, setNotes }) {
     <div className="page">
       <div className="page-title" style={{position:"relative"}}>💌 回憶日記</div>
       <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>setShow(true)}>＋ 記錄回憶</button>
+      {confirmDel.Dialog}
       {notes.length===0&&<div className="empty">💝 把美好的時光記錄下來吧！</div>}
       <div style={{columns:"300px 2",gap:16}}>
         {notes.map(n=>(
@@ -962,12 +998,12 @@ function MemoryPage({ notes, setNotes }) {
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
                 <div style={{fontSize:24,marginBottom:4}}>{n.mood}</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:COLORS.secondary}}>{n.title}</div>
-                <div style={{fontSize:12,color:COLORS.muted}}>{n.date} · {whoLabel(n.who)}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:var(--secondary)}}>{n.title}</div>
+                <div style={{fontSize:12,color:var(--muted)}}>{n.date} · {whoLabel(n.who)}</div>
               </div>
-              <button className="btn btn-sm btn-danger" onClick={()=>del(n.id)}>✕</button>
+              <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這則回憶嗎？"))del(n.id);}}>🗑️</button>
             </div>
-            {n.content&&<div style={{marginTop:10,fontSize:14,lineHeight:1.8,color:COLORS.text}}>{n.content}</div>}
+            {n.content&&<div style={{marginTop:10,fontSize:14,lineHeight:1.8,color:var(--text)}}>{n.content}</div>}
           </div>
         ))}
       </div>
@@ -1048,18 +1084,20 @@ function MovieModal({ movie, onClose, onSave }) {
         <div className="modal-title">{movie?"編輯電影":"新增電影"}</div>
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           <div style={{flexShrink:0,textAlign:"center"}}>
-            <div style={{width:90,height:130,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:COLORS.soft,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            <div style={{width:90,height:130,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
               {posterPreview
                 ? <img src={posterPreview} alt="poster" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setPosterPreview("")}/>
                 : <span style={{fontSize:32}}>{searching?"⏳":"🎬"}</span>}
               {searching&&<div style={{position:"absolute",inset:0,background:"#fff8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>⏳</div>}
             </div>
-            {posterPreview&&<div style={{fontSize:10,color:COLORS.green,marginTop:4}}>✓ 自動取得</div>}
+            {posterPreview&&<div style={{fontSize:10,color:#52b788,marginTop:4}}>✓ 自動取得</div>}
           </div>
           <div style={{flex:1}}>
             <label>電影名稱（輸入後自動搜尋）</label>
             <input value={form.title} onChange={handleTitleChange} placeholder="輸入電影名稱…"/>
-            {searching&&<div style={{fontSize:12,color:COLORS.primary,marginTop:4}}>🔍 搜尋海報中…</div>}
+            {searching&&<div style={{fontSize:12,color:"var(--primary)",marginTop:4}}>🔍 搜尋海報中…</div>}
+            <label>海報網址（可手動貼上覆蓋）</label>
+            <input value={posterPreview} onChange={e=>setPosterPreview(e.target.value)} placeholder="https://... 貼上圖片網址"/>
           </div>
         </div>
         <div className="form-row" style={{marginTop:12}}>
@@ -1089,6 +1127,7 @@ function MovieModal({ movie, onClose, onSave }) {
 }
 
 function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
+  const confirmDel = useConfirm();
   const [tab, setTab] = useState("done");
   const [showModal, setShowModal] = useState(false);
   const [editMovie, setEditMovie] = useState(null);
@@ -1143,7 +1182,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                   <Stars n={m.rating}/>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
                     <span className={`badge badge-${m.who}`} style={{fontSize:10}}>{whoLabel(m.who)}</span>
-                    {m.watchedAt&&<span style={{fontSize:10,color:COLORS.muted}}>{m.watchedAt}</span>}
+                    {m.watchedAt&&<span style={{fontSize:10,color:var(--muted)}}>{m.watchedAt}</span>}
                   </div>
                 </div>
               </div>
@@ -1167,7 +1206,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                   <span className={`badge badge-${w.who}`} style={{fontSize:10}}>{whoLabel(w.who)}</span>
                   <div style={{display:"flex",gap:4,marginTop:6}}>
                     <button className="btn btn-sm btn-soft" style={{flex:1,fontSize:10}} onClick={()=>moveToWatched(w)}>✓看了</button>
-                    <button className="btn btn-sm btn-danger" onClick={()=>delWish(w.id)}>✕</button>
+                    <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要從想看清單移除嗎？"))delWish(w.id);}}>🗑️</button>
                   </div>
                 </div>
               </div>
@@ -1176,6 +1215,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
         </>
       )}
 
+      {confirmDel.Dialog}
       {detail&&(
         <div className="overlay" onClick={()=>setDetail(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -1187,12 +1227,12 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
                 <Stars n={detail.rating}/>
                 <span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span>
-                {detail.watchedAt&&<div style={{fontSize:13,color:COLORS.muted,marginTop:6}}>觀看日：{detail.watchedAt}</div>}
+                {detail.watchedAt&&<div style={{fontSize:13,color:var(--muted),marginTop:6}}>觀看日：{detail.watchedAt}</div>}
               </div>
             </div>
             {detail.review&&<><hr className="divider"/><div style={{fontSize:14,lineHeight:1.8}}>{detail.review}</div></>}
             <div className="modal-actions">
-              <button className="btn btn-danger btn-sm" onClick={()=>delMovie(detail.id)}>刪除</button>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這部電影嗎？")){delMovie(detail.id)}}}>刪除</button>
               <button className="btn btn-soft" onClick={()=>{setEditMovie(detail);setDetail(null);setShowModal(true)}}>編輯</button>
               <button className="btn btn-primary" onClick={()=>setDetail(null)}>關閉</button>
             </div>
@@ -1207,13 +1247,13 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-title">加入想看清單</div>
             <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-              <div style={{width:70,height:100,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:COLORS.soft,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:70,height:100,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:var(--soft),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {wishPoster?<img src={wishPoster} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:24}}>{wishSearching?"⏳":"🎬"}</span>}
               </div>
               <div style={{flex:1}}>
                 <label>電影名稱</label>
                 <input value={wishForm.title} onChange={handleWishTitle} placeholder="輸入名稱自動搜尋…"/>
-                {wishSearching&&<div style={{fontSize:11,color:COLORS.primary,marginTop:3}}>🔍 搜尋中…</div>}
+                {wishSearching&&<div style={{fontSize:11,color:var(--primary),marginTop:3}}>🔍 搜尋中…</div>}
               </div>
             </div>
             <label>誰想看</label>
@@ -1235,6 +1275,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
 // MEMO PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 function MemoPage({ memos, setMemos }) {
+  const confirmDel = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title:"", content:"", who:"both", photos:[] });
   const [editId, setEditId] = useState(null);
@@ -1266,24 +1307,25 @@ function MemoPage({ memos, setMemos }) {
     <div className="page">
       <div className="page-title" style={{position:"relative"}}>📝 備忘錄</div>
       <button className="btn btn-primary" style={{marginBottom:16}} onClick={()=>{setEditId(null);setForm({title:"",content:"",who:"both",photos:[]});setShowModal(true)}}>＋ 新增備忘錄</button>
+      {confirmDel.Dialog}
       {memos.length===0&&<div className="empty">📝 記下重要的事情吧！</div>}
       <div style={{columns:"300px 2",gap:16}}>
         {memos.map(m=>(
           <div key={m.id} className="card" style={{breakInside:"avoid",marginBottom:16,borderLeft:`4px solid ${whoColor(m.who)}`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
               <div>
-                {m.title&&<div style={{fontFamily:"'Caveat',cursive",fontSize:18,fontWeight:700,color:COLORS.secondary}}>{m.title}</div>}
+                {m.title&&<div style={{fontFamily:"'Caveat',cursive",fontSize:18,fontWeight:700,color:var(--secondary)}}>{m.title}</div>}
                 <div style={{display:"flex",gap:6,alignItems:"center",marginTop:2}}>
                   <span className={`badge badge-${m.who}`}>{whoLabel(m.who)}</span>
-                  <span style={{fontSize:11,color:COLORS.muted}}>{m.updatedAt}</span>
+                  <span style={{fontSize:11,color:var(--muted)}}>{m.updatedAt}</span>
                 </div>
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button className="btn btn-sm btn-soft" onClick={()=>openEdit(m)}>✏️</button>
-                <button className="btn btn-sm btn-danger" onClick={()=>del(m.id)}>✕</button>
+                <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這則備忘錄嗎？"))del(m.id);}}>🗑️</button>
               </div>
             </div>
-            {m.content&&<div style={{fontSize:14,lineHeight:1.8,color:COLORS.text,marginBottom:8,whiteSpace:"pre-wrap"}}>{m.content}</div>}
+            {m.content&&<div style={{fontSize:14,lineHeight:1.8,color:var(--text),marginBottom:8,whiteSpace:"pre-wrap"}}>{m.content}</div>}
             {m.photos?.length>0&&(
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {m.photos.map(p=>(
@@ -1380,6 +1422,196 @@ function Deco({ type="leaf", style={} }) {
     </svg>
   );
   return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FOOD PAGE
+// ═══════════════════════════════════════════════════════════════════════════
+async function searchGoogleMapUrl(name) {
+  // Returns a Google Maps search link for the restaurant name
+  return `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
+}
+
+function FoodPage({ food, setFood }) {
+  const confirmDel = useConfirm();
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ name:"", mapUrl:"", who:"both", rating:0, review:"", tags:[], date:"" });
+  const [searching, setSearching] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [filterWho, setFilterWho] = useState("all");
+  const mapTimer = useState(null);
+
+  const whoLabel = w => w==="her"?"7ing":w==="him"?"KM":"一起";
+  const whoColor = w => w==="her"?"#e07a9f":w==="him"?"#4ea8de":"#f4a261";
+
+  const handleNameChange = async e => {
+    const val = e.target.value;
+    setForm(f=>({...f, name:val}));
+    if (mapTimer[0]) clearTimeout(mapTimer[0]);
+    if (val.length < 1) return;
+    mapTimer[0] = setTimeout(async () => {
+      setSearching(true);
+      const url = await searchGoogleMapUrl(val);
+      setForm(f=>({...f, mapUrl: url}));
+      setSearching(false);
+    }, 600);
+  };
+
+  const saveItem = () => {
+    if (!form.name) return;
+    const item = {...form, id: editItem?.id || uid(), createdAt: today()};
+    setFood(p => editItem ? p.map(x=>x.id===item.id?item:x) : [...p, item]);
+    setShowModal(false); setEditItem(null);
+    setForm({ name:"", mapUrl:"", who:"both", rating:0, review:"", tags:[], date:"" });
+  };
+  const del = async id => { if(await confirmDel.ask("確定要刪除這家餐廳嗎？")) { setFood(p=>p.filter(f=>f.id!==id)); setDetail(null); }};
+  const openEdit = item => { setForm(item); setEditItem(item); setShowModal(true); };
+
+  const FOOD_TAGS = ["🍜 麵食","🍱 日式","🥩 燒肉","🍕 西式","🍣 壽司","☕ 咖啡","🧇 早午餐","🍰 甜點","🥗 輕食","🍲 火鍋"];
+
+  const filtered = filterWho==="all" ? food : food.filter(f=>f.who===filterWho);
+
+  return (
+    <div className="page">
+      {confirmDel.Dialog}
+      <div className="page-title">🍜 美食地圖</div>
+
+      <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+        <div className="tab-row" style={{margin:0}}>
+          {["all","her","him","both"].map(t=>(
+            <button key={t} className={`tab-pill${filterWho===t?" active":""}`} onClick={()=>setFilterWho(t)}>
+              {t==="all"?"全部":t==="her"?"7ing的":t==="him"?"KM的":"一起去"}
+            </button>
+          ))}
+        </div>
+        <button className="btn btn-primary" onClick={()=>{setEditItem(null);setForm({name:"",mapUrl:"",who:"both",rating:0,review:"",tags:[],date:""});setShowModal(true);}}>＋ 新增店家</button>
+      </div>
+
+      {filtered.length===0&&<div className="empty">🗺️ 記錄你們吃過的美食吧！</div>}
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+        {filtered.map(item=>(
+          <div key={item.id} className="card" style={{cursor:"pointer",borderLeft:`4px solid ${whoColor(item.who)}`,padding:18}}
+            onClick={()=>setDetail(item)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div style={{fontFamily:"'Caveat',cursive",fontSize:20,fontWeight:700,color:"var(--secondary)",marginBottom:4}}>{item.name}</div>
+                <Stars n={item.rating}/>
+              </div>
+              <span className={`badge badge-${item.who}`}>{whoLabel(item.who)}</span>
+            </div>
+            {item.tags?.length>0&&(
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"8px 0"}}>
+                {item.tags.map(t=><span key={t} style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:"var(--soft)",color:"var(--muted)"}}>{t}</span>)}
+              </div>
+            )}
+            {item.review&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6,lineHeight:1.6,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.review}</div>}
+            <div style={{display:"flex",gap:10,marginTop:10,alignItems:"center"}}>
+              {item.mapUrl&&(
+                <a href={item.mapUrl} target="_blank" rel="noopener noreferrer"
+                  onClick={e=>e.stopPropagation()}
+                  style={{fontSize:12,color:"var(--primary)",textDecoration:"none",display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:8,background:"var(--soft)",fontWeight:700}}>
+                  📍 Google Map
+                </a>
+              )}
+              {item.date&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:"auto"}}>{item.date}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail */}
+      {detail&&(
+        <div className="overlay" onClick={()=>setDetail(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+              <div>
+                <div className="modal-title" style={{marginBottom:4}}>{detail.name}</div>
+                <Stars n={detail.rating}/>
+                <div style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span>
+                  {detail.date&&<span style={{fontSize:12,color:"var(--muted)"}}>{detail.date}</span>}
+                </div>
+              </div>
+            </div>
+            {detail.tags?.length>0&&(
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {detail.tags.map(t=><span key={t} style={{fontSize:12,padding:"3px 10px",borderRadius:10,background:"var(--soft)",color:"var(--muted)"}}>{t}</span>)}
+              </div>
+            )}
+            {detail.review&&<div style={{fontSize:14,lineHeight:1.8,color:"var(--text)",marginBottom:16}}>{detail.review}</div>}
+            {detail.mapUrl&&(
+              <a href={detail.mapUrl} target="_blank" rel="noopener noreferrer"
+                style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",borderRadius:12,background:"var(--soft)",color:"var(--primary)",textDecoration:"none",fontWeight:700,fontSize:14,marginBottom:16}}>
+                📍 在 Google Map 開啟
+              </a>
+            )}
+            <div className="modal-actions">
+              <button className="btn btn-danger btn-sm" onClick={()=>del(detail.id)}>刪除</button>
+              <button className="btn btn-soft" onClick={()=>{openEdit(detail);setDetail(null);}}>編輯</button>
+              <button className="btn btn-primary" onClick={()=>setDetail(null)}>關閉</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {showModal&&(
+        <div className="overlay" onClick={()=>setShowModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">{editItem?"編輯店家":"新增店家"}</div>
+
+            <label>店名（輸入後自動連結 Google Map）</label>
+            <input value={form.name} onChange={handleNameChange} placeholder="例：鼎泰豐、一蘭拉麵…"/>
+            {searching&&<div style={{fontSize:12,color:"var(--primary)",marginTop:3}}>📍 搜尋位置中…</div>}
+
+            <label>Google Map 連結（可手動貼上覆蓋）</label>
+            <input value={form.mapUrl} onChange={e=>setForm(f=>({...f,mapUrl:e.target.value}))} placeholder="https://maps.google.com/..."/>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>誰去的</label>
+                <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
+                  <option value="her">7ing</option>
+                  <option value="him">KM</option>
+                  <option value="both">一起</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>日期</label>
+                <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/>
+              </div>
+            </div>
+
+            <label>評分</label>
+            <Stars n={form.rating} onChange={r=>setForm(f=>({...f,rating:r}))}/>
+
+            <label>標籤（可多選）</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+              {FOOD_TAGS.map(tag=>(
+                <button key={tag} type="button"
+                  onClick={()=>setForm(f=>({...f,tags:f.tags.includes(tag)?f.tags.filter(t=>t!==tag):[...f.tags,tag]}))}
+                  style={{fontSize:12,padding:"4px 10px",borderRadius:10,border:`1.5px solid ${form.tags.includes(tag)?"var(--primary)":"var(--soft)"}`,
+                    background:form.tags.includes(tag)?"var(--primary)":"var(--card)",
+                    color:form.tags.includes(tag)?"#fff":"var(--muted)",cursor:"pointer",transition:"all .15s"}}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+
+            <label>心得</label>
+            <textarea value={form.review} onChange={e=>setForm(f=>({...f,review:e.target.value}))} placeholder="這家店怎麼樣？推薦的菜色？下次還會來嗎？"/>
+
+            <div className="modal-actions">
+              <button className="btn btn-soft" onClick={()=>setShowModal(false)}>取消</button>
+              <button className="btn btn-primary" onClick={saveItem}>{editItem?"儲存":"新增"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1816,20 +2048,20 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Today's events */}
         <div className="card">
           <div className="card-title">📅 今日行程</div>
-          {todayEvs.length===0?<div style={{color:COLORS.muted,fontSize:14}}>今天沒有行程，好好休息 ☁️</div>
+          {todayEvs.length===0?<div style={{color:var(--muted),fontSize:14}}>今天沒有行程，好好休息 ☁️</div>
             :todayEvs.map(e=>(
               <div key={e.id} className="event-item" style={{padding:"8px 10px",marginBottom:6}}>
                 <div style={{width:8,height:8,borderRadius:"50%",background:whoColor(e.who)}}/>
-                <div style={{flex:1}}>{e.time&&<span style={{fontSize:12,color:COLORS.muted,marginRight:8}}>{e.time}</span>}{e.title}</div>
+                <div style={{flex:1}}>{e.time&&<span style={{fontSize:12,color:var(--muted),marginRight:8}}>{e.time}</span>}{e.title}</div>
                 <span className={`badge badge-${e.who}`}>{whoLabel(e.who)}</span>
               </div>
             ))
           }
           {upcomingEvs.length>0&&<>
-            <div style={{fontSize:12,color:COLORS.muted,fontWeight:700,margin:"12px 0 6px"}}>即將到來</div>
+            <div style={{fontSize:12,color:var(--muted),fontWeight:700,margin:"12px 0 6px"}}>即將到來</div>
             {upcomingEvs.map(e=>(
-              <div key={e.id} style={{fontSize:13,color:COLORS.text,padding:"4px 0",display:"flex",gap:8,alignItems:"center"}}>
-                <span style={{color:COLORS.muted,minWidth:70}}>{e.date}</span>{e.title}
+              <div key={e.id} style={{fontSize:13,color:var(--text),padding:"4px 0",display:"flex",gap:8,alignItems:"center"}}>
+                <span style={{color:var(--muted),minWidth:70}}>{e.date}</span>{e.title}
               </div>
             ))}
           </>}
@@ -1838,7 +2070,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Goals summary */}
         <div className="card">
           <div className="card-title">🎯 目標進度</div>
-          {activeGoals.length===0?<div style={{color:COLORS.muted,fontSize:14}}>還沒有目標！</div>
+          {activeGoals.length===0?<div style={{color:var(--muted),fontSize:14}}>還沒有目標！</div>
             :(() => {
               const total = goals.length;
               const doneCount = goals.filter(g=>g.done).length;
@@ -1846,7 +2078,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
               return (
                 <>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                    <span style={{fontSize:13,color:COLORS.muted}}>已完成 {doneCount} / {total} 個</span>
+                    <span style={{fontSize:13,color:var(--muted)}}>已完成 {doneCount} / {total} 個</span>
                     <span style={{fontSize:15,fontWeight:700,color:pct===100?COLORS.green:COLORS.primary}}>{pct===100?"🎉 全完成！":`${pct}%`}</span>
                   </div>
                   <div className="progress-track" style={{height:14,borderRadius:7,marginBottom:14}}>
@@ -1870,14 +2102,14 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Currently reading */}
         <div className="card">
           <div className="card-title">📖 正在閱讀</div>
-          {readingNow.length===0?<div style={{color:COLORS.muted,fontSize:14}}>快去找本書讀吧！</div>
+          {readingNow.length===0?<div style={{color:var(--muted),fontSize:14}}>快去找本書讀吧！</div>
             :readingNow.map(b=>(
               <div key={b.id} style={{display:"flex",gap:10,marginBottom:12,alignItems:"center"}}>
                 {b.coverUrl?<img src={b.coverUrl} style={{width:36,height:50,objectFit:"cover",borderRadius:4}} alt={b.title} onError={e=>e.target.style.display="none"}/>
-                  :<div style={{width:36,height:50,background:COLORS.soft,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>📚</div>}
+                  :<div style={{width:36,height:50,background:var(--soft),borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>📚</div>}
                 <div>
                   <div style={{fontSize:13,fontWeight:700}}>{b.title}</div>
-                  <div style={{fontSize:11,color:COLORS.muted}}>{b.author}</div>
+                  <div style={{fontSize:11,color:var(--muted)}}>{b.author}</div>
                   <span className={`badge badge-${b.who}`} style={{marginTop:2}}>{whoLabel(b.who)}</span>
                 </div>
               </div>
@@ -1888,13 +2120,13 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
         {/* Recent memories */}
         <div className="card">
           <div className="card-title">💌 最近回憶</div>
-          {notes.length===0?<div style={{color:COLORS.muted,fontSize:14}}>記錄你們的美好時光！</div>
+          {notes.length===0?<div style={{color:var(--muted),fontSize:14}}>記錄你們的美好時光！</div>
             :notes.slice(0,3).map(n=>(
               <div key={n.id} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
                 <span style={{fontSize:20}}>{n.mood}</span>
                 <div>
                   <div style={{fontSize:13,fontWeight:700}}>{n.title}</div>
-                  <div style={{fontSize:11,color:COLORS.muted}}>{n.date}</div>
+                  <div style={{fontSize:11,color:var(--muted)}}>{n.date}</div>
                 </div>
               </div>
             ))
@@ -1909,13 +2141,14 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
 // APP ROOT
 // ═══════════════════════════════════════════════════════════════════════════
 const TABS = [
-  { id:"home", label:"🏠 首頁" },
-  { id:"calendar", label:"📅 行事曆" },
-  { id:"goals", label:"🎯 目標" },
-  { id:"reading", label:"📖 閱讀" },
-  { id:"movies", label:"🎬 電影" },
-  { id:"memo", label:"📝 備忘錄" },
-  { id:"memory", label:"💌 回憶" },
+  { id:"home",     label:"🏠", name:"首頁" },
+  { id:"calendar", label:"📅", name:"行事曆" },
+  { id:"goals",    label:"🎯", name:"每日目標" },
+  { id:"reading",  label:"📖", name:"閱讀清單" },
+  { id:"movies",   label:"🎬", name:"電影清單" },
+  { id:"food",     label:"🍜", name:"美食地圖" },
+  { id:"memo",     label:"📝", name:"備忘錄" },
+  { id:"memory",   label:"💌", name:"回憶日記" },
 ];
 
 export default function App() {
@@ -1932,6 +2165,7 @@ export default function App() {
   const [movies, setMovies] = useState([]);
   const [mwishlist, setMwishlist] = useState([]);
   const [memos, setMemos] = useState([]);
+  const [food, setFood] = useState([]);
   const saveTimer = useRef({});
   const [isReady, setIsReady] = useState(false);
 
@@ -1964,6 +2198,7 @@ export default function App() {
     dbLoad(KEYS.movies,    v => setMovies(v));
     dbLoad(KEYS.mwishlist, v => setMwishlist(v));
     dbLoad(KEYS.memos,     v => setMemos(v));
+    dbLoad(KEYS.food,      v => setFood(v));
     setIsReady(true);
   }, []);
 
@@ -1981,6 +2216,7 @@ export default function App() {
   useEffect(() => { if(isReady) saveDebounced(KEYS.movies,    movies); },    [movies]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.mwishlist, mwishlist); }, [mwishlist]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.memos,     memos); },     [memos]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.food,      food); },      [food]);
 
   if (!isReady) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:mode==="night"?"#060c28":"#dff0d8"}}>
@@ -1992,21 +2228,70 @@ export default function App() {
 
   if (!authed) return <LoginScreen onAuth={()=>setAuthed(true)} mode={mode} lpBg={lpBg}/>;
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <>
       <style>{css}</style>
-      <div className="app">
+      <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)}>
         <nav className="nav">
-          <div className="nav-logo">We<span>♡</span>Us</div>
-          {TABS.map(t=>(
-            <div key={t.id} className={`nav-tab${tab===t.id?" active":""}`} onClick={()=>setTab(t.id)}>{t.label}</div>
-          ))}
+          <div className="nav-logo">7ing<span>♡</span>KM</div>
+          <div style={{flex:1}}/>
+          {/* Current page label */}
+          <div style={{color:"#ffffffcc",fontSize:14,fontFamily:"'Noto Sans TC',sans-serif",marginRight:12}}>
+            {TABS.find(t=>t.id===tab)?.name}
+          </div>
+          {/* Hamburger */}
+          <button onClick={e=>{e.stopPropagation();setMenuOpen(m=>!m);}} style={{
+            background:"none",border:"none",cursor:"pointer",padding:"8px",
+            display:"flex",flexDirection:"column",gap:"5px",zIndex:120
+          }}>
+            {[0,1,2].map(i=>(
+              <div key={i} style={{
+                width:24,height:2.5,borderRadius:2,background:"#fff",transition:"all .25s",
+                transform: menuOpen ? (i===0?"rotate(45deg) translate(5px,5px)":i===2?"rotate(-45deg) translate(5px,-5px)":"scaleX(0)") : "none",
+              }}/>
+            ))}
+          </button>
+          {/* Dropdown menu */}
+          {menuOpen&&(
+            <div onClick={e=>e.stopPropagation()} style={{
+              position:"absolute",top:"100%",right:0,
+              background:"var(--nav-bg)",
+              border:"1px solid var(--nav-border)",
+              borderRadius:"0 0 16px 16px",
+              minWidth:180,zIndex:110,
+              boxShadow:"0 8px 32px rgba(0,0,0,0.3)",
+              overflow:"hidden",
+            }}>
+              {TABS.map(t=>(
+                <div key={t.id}
+                  onClick={()=>{setTab(t.id);setMenuOpen(false);}}
+                  style={{
+                    padding:"13px 20px",cursor:"pointer",display:"flex",
+                    alignItems:"center",gap:12,
+                    background:tab===t.id?"rgba(255,255,255,0.15)":"transparent",
+                    color:"#fff",fontSize:15,
+                    fontFamily:"'Noto Sans TC',sans-serif",
+                    borderLeft:tab===t.id?"3px solid var(--accent)":"3px solid transparent",
+                    transition:"background .15s",
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"}
+                  onMouseLeave={e=>e.currentTarget.style.background=tab===t.id?"rgba(255,255,255,0.15)":"transparent"}
+                >
+                  <span style={{fontSize:20}}>{t.label}</span>
+                  <span>{t.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </nav>
         {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} goalLog={goalLog} mode={mode} lpBg={lpBg}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
         {tab==="goals"   && <GoalsPage goals={goals} setGoals={setGoals} goalLog={goalLog} setGoalLog={setGoalLog}/>}
         {tab==="reading" && <ReadingPage books={books} setBooks={setBooks} wishlist={wishlist} setWishlist={setWishlist}/>}
         {tab==="movies"  && <MoviesPage movies={movies} setMovies={setMovies} mwishlist={mwishlist} setMwishlist={setMwishlist}/>}
+        {tab==="food"    && <FoodPage food={food} setFood={setFood}/>}
         {tab==="memo"    && <MemoPage memos={memos} setMemos={setMemos}/>}
         {tab==="memory"  && <MemoryPage notes={notes} setNotes={setNotes}/>}
       </div>
@@ -2015,17 +2300,16 @@ export default function App() {
 }
 
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-(function mount() {
+(function mount(){
   const splash = document.getElementById('splash');
   const root   = document.getElementById('root');
   try {
     ReactDOM.createRoot(root).render(React.createElement(App));
-    splash.style.opacity = '0';
-    setTimeout(() => { splash.style.display = 'none'; }, 500);
+    splash.style.opacity='0';
+    setTimeout(()=>splash.style.display='none', 600);
   } catch(e) {
-    console.error('Mount error:', e);
-    splash.innerHTML = '<h1>載入失敗 😢</h1><p style="color:#ff8888">'+e.message+'</p>';
+    console.error('Mount error:',e);
+    splash.innerHTML='<h1 style="color:#ff8888">載入失敗 😢</h1><p style="color:#ffaaaa;font-size:13px;max-width:300px;text-align:center">'+e.message+'</p>';
   }
 })();
 </script>
