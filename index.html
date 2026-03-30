@@ -32,16 +32,19 @@
 </div>
 <div id="root"></div>
 
-<!-- Firebase 9 compat -->
+<!-- Firebase 9 compat — must load before Babel script executes -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<!-- React 18 -->
+
+<!-- React 18 UMD -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<!-- Babel -->
+
+<!-- Babel standalone -->
 <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
 
 <script type="text/babel">
+/* global React, ReactDOM, firebase */
 const { useState, useEffect, useRef } = React;
 
 
@@ -64,19 +67,22 @@ const KEYS = {
 let _db=null;
 function getDB(){
   if(_db) return _db;
+  if(typeof firebase==="undefined"){ console.error("Firebase not loaded"); return null; }
   if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
   _db=firebase.database(); return _db;
 }
 function dbLoad(key,cb){
-  const db=getDB(); if(!db){cb([]);return ()=>{};}
+  const db=getDB();
+  if(!db){ cb([]); return ()=>{}; }
   const r=db.ref(key);
-  r.on('value',snap=>{const v=snap.val();cb(v?Object.values(v):[]);});
+  r.on('value', snap=>{ const v=snap.val(); cb(v ? Object.values(v) : []); },
+    err=>{ console.error("dbLoad error",key,err); cb([]); });
   return ()=>r.off('value');
 }
 function dbSave(key,arr){
   const db=getDB(); if(!db) return;
   const obj={}; arr.forEach(i=>{obj[i.id]=i;});
-  db.ref(key).set(obj).catch(console.error);
+  db.ref(key).set(obj).catch(e=>console.error("dbSave error",key,e));
 }
 
 
@@ -2167,56 +2173,70 @@ export default function App() {
   const [memos, setMemos] = useState([]);
   const [food, setFood] = useState([]);
   const saveTimer = useRef({});
+  // Track which collections have loaded their first snapshot
+  const loadedRef = useRef({
+    events:false,goals:false,goalLog:false,books:false,
+    wishlist:false,notes:false,movies:false,mwishlist:false,
+    memos:false,food:false
+  });
   const [isReady, setIsReady] = useState(false);
+  const isReadyRef = useRef(false);
+
+  const markLoaded = (key) => {
+    loadedRef.current[key] = true;
+    if (!isReadyRef.current && Object.values(loadedRef.current).every(Boolean)) {
+      isReadyRef.current = true;
+      setIsReady(true);
+    }
+  };
 
   // Daily goal auto-log
   useEffect(() => {
     if (!isReady || goals.length === 0) return;
     const todayStr = today();
-    const alreadyLogged = goalLog.some(l => l.date === todayStr);
-    if (alreadyLogged) return;
-    const now = new Date();
-    // Log at end of day (after 23:00) or when user visits next day
     const lastLogDate = goalLog.length > 0 ? goalLog[goalLog.length-1].date : null;
     if (lastLogDate && lastLogDate !== todayStr) {
-      // New day — log yesterday's completion
-      const done = goals.filter(g => g.done && g.createdAt === lastLogDate).length;
-      const total = goals.filter(g => g.createdAt === lastLogDate).length || goals.length;
-      const pct = total > 0 ? Math.round((goals.filter(g=>g.done).length / goals.length)*100) : 0;
-      setGoalLog(p => [...p, { date: lastLogDate, pct, done: goals.filter(g=>g.done).length, total: goals.length, id: uid() }]);
+      const pct = Math.round((goals.filter(g=>g.done).length / goals.length)*100);
+      setGoalLog(p => [...p, { date:lastLogDate, pct, done:goals.filter(g=>g.done).length, total:goals.length, id:uid() }]);
     }
   }, [isReady, goals]);
 
-  // Load from localStorage on mount (sync)
+  // Subscribe to Firebase (or localStorage) — each fires markLoaded when first data arrives
   useEffect(() => {
-    dbLoad(KEYS.events,    v => setEvents(v));
-    dbLoad(KEYS.goals,     v => setGoals(v));
-    dbLoad(KEYS.goalLog,   v => setGoalLog(v));
-    dbLoad(KEYS.books,     v => setBooks(v));
-    dbLoad(KEYS.wishlist,  v => setWishlist(v));
-    dbLoad(KEYS.notes,     v => setNotes(v));
-    dbLoad(KEYS.movies,    v => setMovies(v));
-    dbLoad(KEYS.mwishlist, v => setMwishlist(v));
-    dbLoad(KEYS.memos,     v => setMemos(v));
-    dbLoad(KEYS.food,      v => setFood(v));
-    setIsReady(true);
+    const unsubs = [
+      dbLoad(KEYS.events,    v => { setEvents(v);    markLoaded('events'); }),
+      dbLoad(KEYS.goals,     v => { setGoals(v);     markLoaded('goals'); }),
+      dbLoad(KEYS.goalLog,   v => { setGoalLog(v);   markLoaded('goalLog'); }),
+      dbLoad(KEYS.books,     v => { setBooks(v);     markLoaded('books'); }),
+      dbLoad(KEYS.wishlist,  v => { setWishlist(v);  markLoaded('wishlist'); }),
+      dbLoad(KEYS.notes,     v => { setNotes(v);     markLoaded('notes'); }),
+      dbLoad(KEYS.movies,    v => { setMovies(v);    markLoaded('movies'); }),
+      dbLoad(KEYS.mwishlist, v => { setMwishlist(v); markLoaded('mwishlist'); }),
+      dbLoad(KEYS.memos,     v => { setMemos(v);     markLoaded('memos'); }),
+      dbLoad(KEYS.food,      v => { setFood(v);      markLoaded('food'); }),
+    ];
+    // Safety timeout: if Firebase never responds in 8s, unblock anyway
+    const timeout = setTimeout(() => {
+      if (!isReadyRef.current) { isReadyRef.current=true; setIsReady(true); }
+    }, 8000);
+    return () => { unsubs.forEach(u=>u&&u()); clearTimeout(timeout); };
   }, []);
 
-  // Debounced save
+  // Debounced save — only after ALL data has loaded to prevent overwriting Firebase
   const saveDebounced = (key, data) => {
     clearTimeout(saveTimer.current[key]);
-    saveTimer.current[key] = setTimeout(() => dbSave(key, data), 400);
+    saveTimer.current[key] = setTimeout(() => dbSave(key, data), 800);
   };
-  useEffect(() => { if(isReady) saveDebounced(KEYS.events,    events); },    [events]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.goals,     goals); },     [goals]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.goalLog,   goalLog); },   [goalLog]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.books,     books); },     [books]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.wishlist,  wishlist); },  [wishlist]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.notes,     notes); },     [notes]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.movies,    movies); },    [movies]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.mwishlist, mwishlist); }, [mwishlist]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.memos,     memos); },     [memos]);
-  useEffect(() => { if(isReady) saveDebounced(KEYS.food,      food); },      [food]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.events,    events); },    [events, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.goals,     goals); },     [goals, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.goalLog,   goalLog); },   [goalLog, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.books,     books); },     [books, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.wishlist,  wishlist); },  [wishlist, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.notes,     notes); },     [notes, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.movies,    movies); },    [movies, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.mwishlist, mwishlist); }, [mwishlist, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.memos,     memos); },     [memos, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.food,      food); },      [food, isReady]);
 
   if (!isReady) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:mode==="night"?"#060c28":"#dff0d8"}}>
@@ -2300,16 +2320,21 @@ export default function App() {
 }
 
 
+// ── Mount ─────────────────────────────────────────────────────────────────
 (function mount(){
   const splash = document.getElementById('splash');
   const root   = document.getElementById('root');
   try {
     ReactDOM.createRoot(root).render(React.createElement(App));
-    splash.style.opacity='0';
-    setTimeout(()=>splash.style.display='none', 600);
+    // Splash hides once App mounts — actual data loading happens inside App
+    splash.style.opacity = '0';
+    setTimeout(()=>{ splash.style.display='none'; }, 600);
   } catch(e) {
-    console.error('Mount error:',e);
-    splash.innerHTML='<h1 style="color:#ff8888">載入失敗 😢</h1><p style="color:#ffaaaa;font-size:13px;max-width:300px;text-align:center">'+e.message+'</p>';
+    console.error('Mount error:', e);
+    splash.innerHTML = '<h1 style="color:#ff9999">載入失敗 😢</h1>'
+      + '<p style="color:#ffbbbb;font-size:13px;max-width:300px;text-align:center;padding:0 20px">'
+      + e.message + '</p>'
+      + '<p style="color:#8899cc;font-size:12px;margin-top:8px">請嘗試重新整理頁面</p>';
   }
 })();
 </script>
