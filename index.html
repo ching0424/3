@@ -159,66 +159,78 @@ const STARS = Array.from({length:120}, (_,i) => ({
   delay:((i%11)*0.35).toFixed(2),
   bright: i%15===0,                // fewer "bright" ones
 }));
-const METEORS = [
-  {x1:10,y1:6,x2:38,y2:24,dur:3.0,delay:5},
-  {x1:62,y1:4,x2:88,y2:20,dur:2.6,delay:11},
-  {x1:30,y1:2,x2:55,y2:17,dur:3.8,delay:18},
-  {x1:78,y1:8,x2:98,y2:22,dur:2.2,delay:25},
-];
+// 注意：METEORS 陣列已經被刪除，因為我們改用更漂亮且效能更好的 CSS 流星了！
+const STARS = Array.from({length:120}, (_,i) => ({
+  id:i,
+  x:((i*137.508)%100).toFixed(2),
+  y:((i*97.31)%72).toFixed(2),
+  r:(0.1+(i%3)*0.1).toFixed(2),
+  dur:(1.2+(i%7)*0.6).toFixed(1),
+  delay:((i%11)*0.35).toFixed(2),
+  bright: i%15===0,
+}));
 
-function NightSkyBanner({ lpBg }) {
+function SkyBanner({ mode, lpBg }) {
+  const isNight = mode === "night";
+  
+  // 根據日夜自動切換漸層背景色與遮罩
+  const bgGradient = isNight
+    ? "linear-gradient(170deg,#020818 0%,#080e30 40%,#0d1a55 100%)"
+    : "linear-gradient(170deg,#c8e6c9 0%,#dff0d8 100%)";
+    
+  const overlayGradient = lpBg
+    ? (isNight ? "linear-gradient(180deg,rgba(2,6,25,0.6) 0%,rgba(8,14,45,0.3) 50%,rgba(5,8,30,0.75) 100%)" : "linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.7) 100%)")
+    : (isNight ? "rgba(2,6,25,0.2)" : "rgba(255,255,255,0.2)");
+
   return (
     <div style={{position:"relative",width:"100%",paddingBottom:"28%",minHeight:190,overflow:"hidden",
-      borderRadius:20,marginBottom:24,border:"2px solid #2a3a8a",boxShadow:"0 6px 40px #00000077"}}>
+      borderRadius:20,marginBottom:24,
+      border: isNight ? "2px solid #2a3a8a" : "2px solid #fff",
+      boxShadow: isNight ? "0 6px 40px #00000077" : "0 6px 30px rgba(61,139,92,0.15)",
+      transition: "all 0.6s" }}>
+      
       {lpBg
-        ? <img src={lpBg} alt="night" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 30%"}}/>
-        : <div style={{position:"absolute",inset:0,background:"linear-gradient(170deg,#020818 0%,#080e30 40%,#0d1a55 100%)"}}/>
+        ? <img src={lpBg} alt="banner" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 30%"}}/>
+        : <div style={{position:"absolute",inset:0,background:bgGradient,transition:"background 0.6s"}}/>
       }
-      <div style={{position:"absolute",inset:0,background:lpBg
-        ?"linear-gradient(180deg,rgba(2,6,25,0.6) 0%,rgba(8,14,45,0.3) 50%,rgba(5,8,30,0.75) 100%)"
-        :"rgba(2,6,25,0.2)"}}/>
-      <svg viewBox="0 0 100 70" preserveAspectRatio="xMidYMid slice"
-        style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2}}>
-        <defs>
-          <filter id="sg"><feGaussianBlur stdDeviation="0.4"/></filter>
-          {METEORS.map((_,i)=>(
-            <linearGradient key={i} id={"mg"+i} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="white" stopOpacity="0"/>
-              <stop offset="50%" stopColor="white" stopOpacity="1"/>
-              <stop offset="100%" stopColor="#b0d0ff" stopOpacity="0"/>
-            </linearGradient>
-          ))}
-        </defs>
-        {STARS.map(s=>(
-          <circle key={s.id} cx={s.x} cy={s.y} r={s.r} fill="white">
-            <animate attributeName="opacity"
-              values={s.bright?"0.1;1;0.2;0.8;0.1":"0.1;0.8;0.1"}
-              dur={s.dur+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
-          </circle>
-        ))}
-        {METEORS.map((m,i)=>(
-          <g key={i}>
-            <line x1={m.x1} y1={m.y1} x2={m.x2} y2={m.y2}
-              stroke={"url(#mg"+i+")"} strokeWidth="0.4" strokeLinecap="round">
-              <animate attributeName="opacity" values="0;0;0.95;0.95;0" keyTimes="0;0.25;0.3;0.6;0.65"
-                dur={m.dur+"s"} begin={m.delay+"s"} repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="translate"
-                values="-20,0;0,0" dur={m.dur+"s"} begin={m.delay+"s"} repeatCount="indefinite"/>
-            </line>
-            <circle cx={m.x2} cy={m.y2} r="0.6" fill="white" opacity="0">
-              <animate attributeName="opacity" values="0;0;0.8;0" keyTimes="0;0.28;0.55;0.65"
-                dur={m.dur+"s"} begin={m.delay+"s"} repeatCount="indefinite"/>
-            </circle>
-          </g>
-        ))}
-      </svg>
+      <div style={{position:"absolute",inset:0,background:overlayGradient,transition:"background 0.6s"}}/>
+
+      {/* 🌙 夜晚專屬：星星 SVG 與 CSS 流星雨 */}
+      {isNight && (
+        <>
+          <svg viewBox="0 0 100 70" preserveAspectRatio="xMidYMid slice" style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2}}>
+            {STARS.map(s=>(
+              <circle key={s.id} cx={s.x} cy={s.y} r={s.r} fill="white">
+                <animate attributeName="opacity" values={s.bright?"0.1;1;0.2;0.8;0.1":"0.1;0.8;0.1"} dur={s.dur+"s"} begin={s.delay+"s"} repeatCount="indefinite"/>
+              </circle>
+            ))}
+          </svg>
+          <div className="shooting-star" style={{ animationDuration: "4.5s", animationDelay: "0s", top: "10%", right: "15%" }}></div>
+          <div className="shooting-star" style={{ animationDuration: "5.5s", animationDelay: "2.5s", top: "25%", right: "35%" }}></div>
+          <div className="shooting-star" style={{ animationDuration: "4s", animationDelay: "4s", top: "40%", right: "5%" }}></div>
+        </>
+      )}
+
+      {/* ☀️ 白天專屬：散步的狗狗 */}
+      {!isNight && (
+        <div className="running-dog-wrapper">
+          <div className="running-dog-inner">🐕</div>
+        </div>
+      )}
+
+      {/* 文字區塊 (隨日夜自動變換字體顏色與陰影) */}
       <div style={{position:"absolute",inset:0,zIndex:5,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <div style={{fontFamily:"'Dancing Script',cursive",fontSize:"clamp(30px,5vw,58px)",fontWeight:700,
-          color:"#ddeeff",textShadow:"0 0 40px #4488ff99,0 0 80px #2244aa55,0 2px 12px rgba(0,0,0,0.8)",lineHeight:1.1}}>
+          color: isNight ? "#ddeeff" : "#2d6a4f",
+          textShadow: isNight ? "0 0 40px #4488ff99,0 0 80px #2244aa55,0 2px 12px rgba(0,0,0,0.8)" : "0 2px 8px rgba(255,255,255,0.8)",
+          lineHeight:1.1, transition:"all 0.6s"}}>
           7ing &amp; KM
         </div>
-        <div style={{fontSize:"clamp(10px,1.4vw,13px)",color:"rgba(160,190,255,0.9)",marginTop:8,
-          textShadow:"0 1px 8px rgba(0,0,0,0.8)",fontWeight:600,letterSpacing:"1.5px"}}>
+        <div style={{fontSize:"clamp(10px,1.4vw,13px)",
+          color: isNight ? "rgba(160,190,255,0.9)" : "#3d8b5c",
+          marginTop:8,
+          textShadow: isNight ? "0 1px 8px rgba(0,0,0,0.8)" : "0 1px 4px rgba(255,255,255,0.6)",
+          fontWeight:600,letterSpacing:"1.5px", transition:"all 0.6s"}}>
           ✦ {new Date().toLocaleDateString("zh-TW",{weekday:"long",year:"numeric",month:"long",day:"numeric"})} ✦
         </div>
       </div>
@@ -470,6 +482,52 @@ label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bot
   .nav-logo{font-size:20px;padding-right:12px}
   .nav-tab{padding:14px 10px;font-size:11px}
   .page{padding:20px 12px}
+}
+  /* ── 動畫：夜晚浪漫流星 ── */
+@keyframes meteor_fly {
+  0% { transform: translate(100%, -50%) rotate(35deg) scaleX(0); opacity: 0; }
+  5% { transform: translate(80%, 0%) rotate(35deg) scaleX(1); opacity: 1; }
+  15% { transform: translate(-20%, 100%) rotate(35deg) scaleX(1.5); opacity: 1; }
+  20% { transform: translate(-30%, 110%) rotate(35deg) scaleX(0.5); opacity: 0; }
+  100% { transform: translate(-30%, 110%) rotate(35deg) scaleX(0.5); opacity: 0; }
+}
+
+.shooting-star {
+  position: absolute;
+  width: 150px; height: 1.5px;
+  background: linear-gradient(-90deg, rgba(255,255,255,0.8), transparent);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
+  opacity: 0;
+  animation: meteor_fly linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── 動畫：白天狗狗散步 ── */
+@keyframes dog_forward {
+  0% { left: -10%; transform: scaleX(1); }
+  45% { left: 100%; transform: scaleX(1); }
+  50% { left: 100%; transform: scaleX(-1); }
+  95% { left: -10%; transform: scaleX(-1); }
+  100% { left: -10%; transform: scaleX(1); }
+}
+@keyframes dog_bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.running-dog-wrapper {
+  position: absolute;
+  bottom: 15px; /* 貼齊 Banner 底部 */
+  z-index: 20;
+  pointer-events: none;
+  animation: dog_forward 25s linear infinite;
+}
+.running-dog-inner {
+  font-size: 32px;
+  animation: dog_bounce 0.4s alternate infinite;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
 }
 `
 
