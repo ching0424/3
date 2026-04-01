@@ -686,12 +686,33 @@ function GoalCalendar({ goalLog }) {
   const [form, setForm] = useState({ name:"", who:"both", deadline:"" });
   const [tab, setTab] = useState("all");
 
-  const addGoal = () => {
-    if (!form.name) return;
-    setGoals(p=>[...p,{ ...form, id:uid(), done:false, createdAt:today() }]);
-    setShowModal(false);
+  // 開啟「新增」模式：清空表單
+  const openAdd = () => {
     setForm({ name:"", who:"both", deadline:"" });
+    setShowModal(true);
   };
+
+  // 開啟「修改」模式：把現有資料塞進表單
+  const openEdit = (goal) => {
+    setForm(goal);
+    setShowModal(true);
+  };
+
+  // 統一的儲存功能（自動判斷是新增還是修改）
+  const saveGoal = () => {
+    if (!form.name) return;
+    
+    if (form.id) {
+      // 有 id 代表是「修改」現有目標
+      setGoals(p => p.map(g => g.id === form.id ? { ...g, ...form } : g));
+    } else {
+      // 沒有 id 代表是「新增」目標
+      setGoals(p => [...p, { ...form, id: uid(), done: false, createdAt: today() }]);
+    }
+    
+    setShowModal(false);
+  };
+
   const toggle = id => setGoals(p=>p.map(g=>g.id===id?{...g,done:!g.done}:g));
   const del    = id => setGoals(p=>p.filter(g=>g.id!==id));
 
@@ -740,7 +761,7 @@ function GoalCalendar({ goalLog }) {
             </button>
           ))}
         </div>
-        <button className="btn btn-primary" onClick={()=>setShowModal(true)}>＋ 新增目標</button>
+        <button className="btn btn-primary" onClick={openAdd}>＋ 新增目標</button>
       </div>
 
       {filtered.length===0&&<div className="empty">🌱 新增你們的目標吧！</div>}
@@ -773,19 +794,27 @@ function GoalCalendar({ goalLog }) {
                 {g.done&&<span style={{fontSize:12,color:"#52b788",fontWeight:700}}>完成 ✅</span>}
               </div>
             </div>
-            <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個目標嗎？"))del(g.id);}}>🗑️</button>
+            
+            {/* 這裡加入了新的修改按鈕 (✏️) */}
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button className="btn btn-sm" style={{ background: "rgba(255,255,255,0.1)", border: "none", cursor: "pointer", borderRadius: "6px" }} onClick={() => openEdit(g)}>✏️</button>
+              <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個目標嗎？"))del(g.id);}}>🗑️</button>
+            </div>
+
           </div>
         </div>
       ))}
 
       {confirmDel.Dialog}
+
       {/* ── 升級版：當月打卡月曆 ── */}
       <GoalCalendar goalLog={goalLog} />
 
-            {showModal&&(
+      {/* 修改後的 Modal 彈出視窗 */}
+      {showModal&&(
         <div className="overlay" onClick={()=>setShowModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">新增目標</div>
+            <div className="modal-title">{form.id ? "修改目標" : "新增目標"}</div>
             <label>目標名稱</label>
             <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="例：今天運動 30 分鐘"/>
             <div className="form-row">
@@ -800,7 +829,7 @@ function GoalCalendar({ goalLog }) {
             </div>
             <div className="modal-actions">
               <button className="btn btn-soft" onClick={()=>setShowModal(false)}>取消</button>
-              <button className="btn btn-primary" onClick={addGoal}>新增</button>
+              <button className="btn btn-primary" onClick={saveGoal}>{form.id ? "儲存" : "新增"}</button>
             </div>
           </div>
         </div>
