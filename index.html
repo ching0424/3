@@ -1899,7 +1899,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
     <div className="page">
       {/* Header banner - meadow scene */}
       {/* Banner: day = park scene, night = little prince */}
-      {mode==="night" ? <NightSkyBanner lpBg={lpBg}/> : (
+      {mode==="night" ? <SkyBanner lpBg={lpBg}/> : (
       <div style={{borderRadius:20,overflow:"hidden",marginBottom:24,position:"relative",boxShadow:"0 6px 32px #2d6a4f44",border:"2px solid #74c69d"}}>
         <style>{`
           /* ── Chase animation: tennis ball leads, poodle follows, collie last ── */
