@@ -604,7 +604,83 @@ function CalendarPage({ events, setEvents }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // GOALS PAGE
 // ═══════════════════════════════════════════════════════════════════════════
-function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
+function GoalCalendar({ goalLog }) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+
+  // 將歷史紀錄的日期與當月的每一天配對
+  const logMap = {};
+  goalLog.forEach(l => {
+    // 自動解析日期，無論您是用哪種格式儲存
+    const d = new Date(l.date.replace(/-/g, '/')); 
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      logMap[d.getDate()] = l;
+    }
+  });
+
+  const blanks = Array(firstDayOfWeek).fill(null);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  return (
+    <div className="card" style={{ marginTop: 8 }}>
+      <div className="card-title" style={{ marginBottom: 15 }}>📅 {month + 1}月 打卡月曆</div>
+      
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, textAlign: "center", marginBottom: 12 }}>
+        {/* 星期標題 */}
+        {["日", "一", "二", "三", "四", "五", "六"].map(day => (
+          <div key={day} style={{ fontSize: 13, color: "var(--muted)", fontWeight: "bold" }}>{day}</div>
+        ))}
+        
+        {/* 空白格子 (對齊每個月第一天是星期幾) */}
+        {blanks.map((_, i) => <div key={`blank-${i}`} />)}
+        
+        {/* 渲染日期 */}
+        {days.map(d => {
+          const l = logMap[d];
+          const pct = l ? l.pct : undefined;
+          
+          // 完全沿用您原本的完成度顏色設定
+          const bg = l ? (pct === 100 ? "#52b788" : pct >= 70 ? "#74c69d" : pct >= 40 ? "#ffd166" : "#ffb3b3") : "rgba(128,128,128,0.1)";
+          const color = l ? (pct === 100 ? "#fff" : "#1b3a2d") : "var(--muted)";
+          
+          return (
+            <div key={d} title={l ? `達成率: ${pct}%` : "無紀錄"} style={{
+              aspectRatio: "1/1",
+              borderRadius: 10,
+              background: bg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              fontWeight: 700,
+              color: color,
+              boxShadow: l ? "0 2px 6px #0001" : "none",
+              cursor: l ? "pointer" : "default",
+              transition: "transform 0.2s"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = l ? "scale(1.15)" : "none"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              {d}
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* 底部顏色圖例 */}
+      <div style={{ fontSize: 12, color: "#52796f", display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+        <span>🟢 100% = 全完成</span>
+        <span>🟡 70-99% = 不錯</span>
+        <span>🟠 40-69% = 普通</span>
+        <span>🔴 0-39% = 加油</span>
+      </div>
+    </div>
+  );
+}
+  function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
   const confirmDel = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name:"", who:"both", deadline:"" });
@@ -703,32 +779,8 @@ function GoalsPage({ goals, setGoals, goalLog, setGoalLog }) {
       ))}
 
       {confirmDel.Dialog}
-      {/* ── Daily History Log ── */}
-      {goalLog.length>0&&(
-        <div className="card" style={{marginTop:8}}>
-          <div className="card-title">📊 每日完成紀錄</div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
-            {[...goalLog].reverse().slice(0,30).map(l=>(
-              <div key={l.id} style={{textAlign:"center",minWidth:52}}>
-                <div style={{
-                  width:44,height:44,borderRadius:10,margin:"0 auto 4px",
-                  background:l.pct===100?"#52b788":l.pct>=70?"#74c69d":l.pct>=40?"#ffd166":"#ffb3b3",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:13,fontWeight:700,color:l.pct===100?"#fff":"#1b3a2d",
-                  boxShadow:"0 2px 6px #0001"
-                }}>{l.pct}%</div>
-                <div style={{fontSize:10,color:"#52796f"}}>{l.date.slice(5)}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{fontSize:12,color:"#52796f",display:"flex",gap:16,flexWrap:"wrap"}}>
-            <span>🟢 100% = 全完成</span>
-            <span>🟡 70-99% = 不錯</span>
-            <span>🟠 40-69% = 普通</span>
-            <span>🔴 0-39% = 加油</span>
-          </div>
-        </div>
-      )}
+      {/* ── 升級版：當月打卡月曆 ── */}
+      <GoalCalendar goalLog={goalLog} />
 
             {showModal&&(
         <div className="overlay" onClick={()=>setShowModal(false)}>
