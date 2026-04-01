@@ -2300,8 +2300,14 @@ function App() {
     <>
       <style>{css}</style>
       <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)}>
-  <nav className="nav">
-          {/* 1. Hamburger (漢堡選單按鈕，移到最前面/左邊) */}
+        <nav className="nav">
+          <div className="nav-logo">7ing<span>♡</span>KM</div>
+          <div style={{flex:1}}/>
+          {/* Current page label */}
+          <div style={{color:"#ffffffcc",fontSize:14,fontFamily:"'Noto Sans TC',sans-serif",marginRight:12}}>
+            {TABS.find(t=>t.id===tab)?.name}
+          </div>
+          {/* Hamburger */}
           <button onClick={e=>{e.stopPropagation();setMenuOpen(m=>!m);}} style={{
             background:"none",border:"none",cursor:"pointer",padding:"8px",
             display:"flex",flexDirection:"column",gap:"5px",zIndex:120
@@ -2313,11 +2319,10 @@ function App() {
               }}/>
             ))}
           </button>
-
-          {/* 2. Dropdown menu (下拉選單，這裡把 right:0 改成 left:0 讓它靠左展開) */}
+          {/* Dropdown menu */}
           {menuOpen&&(
             <div onClick={e=>e.stopPropagation()} style={{
-              position:"absolute",top:"100%",left:0,
+              position:"absolute",top:"100%",right:0,
               background:"var(--nav-bg)",
               border:"1px solid var(--nav-border)",
               borderRadius:"0 0 16px 16px",
@@ -2346,17 +2351,6 @@ function App() {
               ))}
             </div>
           )}
-
-          {/* 3. Current page label (目前頁面的文字標籤，移到漢堡選單旁邊) */}
-          <div style={{color:"#ffffffcc",fontSize:14,fontFamily:"'Noto Sans TC',sans-serif",marginLeft:12}}>
-            {TABS.find(t=>t.id===tab)?.name}
-          </div>
-
-          {/* 4. Flex Spacer (這是一個彈性空白，會把底下的 LOGO 往右邊推到底) */}
-          <div style={{flex:1}}/>
-
-          {/* 5. Logo (LOGO 移到最後面，也就是畫面最右邊) */}
-          <div className="nav-logo">7ing<span>♡</span>KM</div>
         </nav>
         {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} goalLog={goalLog} mode={mode} lpBg={lpBg}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
