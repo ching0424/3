@@ -2301,12 +2301,6 @@ function App() {
       <style>{css}</style>
       <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)}>
         <nav className="nav">
-          <div className="nav-logo">7ing<span>♡</span>KM</div>
-          <div style={{flex:1}}/>
-          {/* Current page label */}
-          <div style={{color:"#ffffffcc",fontSize:14,fontFamily:"'Noto Sans TC',sans-serif",marginRight:12}}>
-            {TABS.find(t=>t.id===tab)?.name}
-          </div>
           {/* Hamburger */}
           <button onClick={e=>{e.stopPropagation();setMenuOpen(m=>!m);}} style={{
             background:"none",border:"none",cursor:"pointer",padding:"8px",
@@ -2319,10 +2313,11 @@ function App() {
               }}/>
             ))}
           </button>
+
           {/* Dropdown menu */}
           {menuOpen&&(
             <div onClick={e=>e.stopPropagation()} style={{
-              position:"absolute",top:"100%",right:0,
+              position:"absolute",top:"100%",left:0,
               background:"var(--nav-bg)",
               border:"1px solid var(--nav-border)",
               borderRadius:"0 0 16px 16px",
@@ -2351,6 +2346,16 @@ function App() {
               ))}
             </div>
           )}
+
+          {/* Current page label */}
+          <div style={{color:"#ffffffcc",fontSize:14,fontFamily:"'Noto Sans TC',sans-serif",marginLeft:12}}>
+            {TABS.find(t=>t.id===tab)?.name}
+          </div>
+
+          <div style={{flex:1}}/>
+
+          {/* Logo */}
+          <div className="nav-logo">7ing<span>♡</span>KM</div>
         </nav>
         {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} goalLog={goalLog} mode={mode} lpBg={lpBg}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
