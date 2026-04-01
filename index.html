@@ -190,11 +190,10 @@ function NightSkyBanner({ lpBg }) {
         ))}
       </svg>
 
-      {/* 🌠 升級版的浪漫流星 (取代原本的 METEORS.map) */}
-      <div className="shooting-star" style={{ animationDuration: "4.5s", animationDelay: "0s", top: "10%", right: "15%" }}></div>
-      <div className="shooting-star" style={{ animationDuration: "5.5s", animationDelay: "2.5s", top: "25%", right: "35%" }}></div>
-      <div className="shooting-star" style={{ animationDuration: "4s", animationDelay: "4s", top: "40%", right: "5%" }}></div>
-
+      {/* 🌠 升級版的浪漫流星 (由左上往右下飛出) */}
+      <div className="shooting-star" style={{ animationDuration: "4.5s", animationDelay: "0s", top: "15%", left: "-10%" }}></div>
+      <div className="shooting-star" style={{ animationDuration: "5.5s", animationDelay: "2.5s", top: "5%", left: "20%" }}></div>
+      <div className="shooting-star" style={{ animationDuration: "4s", animationDelay: "4s", top: "40%", left: "-5%" }}></div>
       {/* 保留原本的標題文字 */}
       <div style={{position:"absolute",inset:0,zIndex:5,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <div style={{fontFamily:"'Dancing Script',cursive",fontSize:"clamp(30px,5vw,58px)",fontWeight:700,
@@ -455,19 +454,21 @@ label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bot
   .nav-tab{padding:14px 10px;font-size:11px}
   .page{padding:20px 12px}
 }
-  /* ── 夜晚浪漫流星 ── */
+/* ── 夜晚浪漫流星 (左上到右下) ── */
 @keyframes meteor_fly {
-  0% { transform: translate(100%, -50%) rotate(35deg) scaleX(0); opacity: 0; }
-  5% { transform: translate(80%, 0%) rotate(35deg) scaleX(1); opacity: 1; }
-  15% { transform: translate(-20%, 100%) rotate(35deg) scaleX(1.5); opacity: 1; }
-  20% { transform: translate(-30%, 110%) rotate(35deg) scaleX(0.5); opacity: 0; }
-  100% { transform: translate(-30%, 110%) rotate(35deg) scaleX(0.5); opacity: 0; }
+  /* 利用先旋轉角度，再往 X 軸推進的方式，確保流星完美沿著斜線軌道滑動 */
+  0% { transform: rotate(35deg) translateX(-100px) scaleX(0); opacity: 0; }
+  5% { transform: rotate(35deg) translateX(50px) scaleX(1); opacity: 1; }
+  15% { transform: rotate(35deg) translateX(1000px) scaleX(1.5); opacity: 1; }
+  20% { transform: rotate(35deg) translateX(1200px) scaleX(0.5); opacity: 0; }
+  100% { transform: rotate(35deg) translateX(1200px) scaleX(0.5); opacity: 0; }
 }
 
 .shooting-star {
   position: absolute;
   width: 150px; height: 1.5px;
-  background: linear-gradient(-90deg, rgba(255,255,255,0.8), transparent);
+  /* 漸層方向反轉：左邊透明(尾跡) -> 右邊白光(亮頭) */
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.8));
   border-radius: 50%;
   filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
   opacity: 0;
