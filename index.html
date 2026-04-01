@@ -1415,24 +1415,34 @@ function MemoPage({ memos, setMemos }) {
   const [lightbox, setLightbox] = useState(null);
 
   const addOrEdit = () => {
-    if(!form.title&&!form.content&&form.photos.length===0) return;
+    if(!form.title && !form.content && form.photos.length === 0) return;
     const memo = {...form, id:editId||uid(), updatedAt:today()};
     setMemos(p=>editId?p.map(m=>m.id===editId?memo:m):[memo,...p]);
     setShowModal(false); setEditId(null);
     setForm({title:"",content:"",who:"both",photos:[]});
   };
+  
   const del = id => setMemos(p=>p.filter(m=>m.id!==id));
-  const openEdit = m => { setForm(m); setEditId(m.id); setShowModal(true); };
+  
+  // 💡 修復重點 1：確保打開編輯時，就算舊資料沒有照片，也會給一個預設的空陣列 []
+  const openEdit = m => { 
+    setForm({ ...m, photos: m.photos || [] }); 
+    setEditId(m.id); 
+    setShowModal(true); 
+  };
 
   const handlePhoto = e => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => setForm(f=>({...f,photos:[...f.photos,{id:uid(),url:ev.target.result,name:file.name}]}));
+      // 💡 同時確保更新表單時 photos 絕對是陣列
+      reader.onload = ev => setForm(f=>({...f,photos:[...(f.photos||[]),{id:uid(),url:ev.target.result,name:file.name}]}));
       reader.readAsDataURL(file);
     });
   };
-  const removePhoto = id => setForm(f=>({...f,photos:f.photos.filter(p=>p.id!==id)}));
+  
+  const removePhoto = id => setForm(f=>({...f,photos:(f.photos||[]).filter(p=>p.id!==id)}));
+  
   const whoLabel = w=>w==="her"?"7ing":w==="him"?"KM":"共同";
   const whoColor = w=>w==="her"?COLORS.her:w==="him"?COLORS.him:COLORS.both;
 
@@ -1440,8 +1450,11 @@ function MemoPage({ memos, setMemos }) {
     <div className="page">
       <div className="page-title" style={{position:"relative"}}>📝 備忘錄</div>
       <button className="btn btn-primary" style={{marginBottom:16}} onClick={()=>{setEditId(null);setForm({title:"",content:"",who:"both",photos:[]});setShowModal(true)}}>＋ 新增備忘錄</button>
+      
       {confirmDel.Dialog}
+      
       {memos.length===0&&<div className="empty">📝 記下重要的事情吧！</div>}
+      
       <div style={{columns:"300px 2",gap:16}}>
         {memos.map(m=>(
           <div key={m.id} className="card" style={{breakInside:"avoid",marginBottom:16,borderLeft:`4px solid ${whoColor(m.who)}`}}>
@@ -1453,7 +1466,8 @@ function MemoPage({ memos, setMemos }) {
                   <span style={{fontSize:11,color:"var(--muted)"}}>{m.updatedAt}</span>
                 </div>
               </div>
-              <div style={{display:"flex",gap:6}}>
+              {/* 💡 修復重點 2：加上 flexShrink: 0 確保手機排版按鈕不會被過長的標題擠壓或變形 */}
+              <div style={{display:"flex",gap:6, flexShrink: 0}}>
                 <button className="btn btn-sm btn-soft" onClick={()=>openEdit(m)}>✏️</button>
                 <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這則備忘錄嗎？"))del(m.id);}}>🗑️</button>
               </div>
@@ -1485,6 +1499,7 @@ function MemoPage({ memos, setMemos }) {
         </div>
       )}
 
+      {/* Modal 彈出視窗 */}
       {showModal&&(
         <div className="overlay" onClick={()=>setShowModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -1499,7 +1514,9 @@ function MemoPage({ memos, setMemos }) {
             </select>
             <label>上傳照片</label>
             <input type="file" accept="image/*" multiple onChange={handlePhoto} style={{padding:"6px 0",border:"none",background:"transparent"}}/>
-            {form.photos.length>0&&(
+            
+            {/* 💡 修復重點 3：加上安全問號 form.photos?.length 確保這裡絕對不會崩潰 */}
+            {form.photos?.length>0&&(
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
                 {form.photos.map(p=>(
                   <div key={p.id} style={{position:"relative"}}>
