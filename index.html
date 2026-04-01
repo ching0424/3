@@ -2238,14 +2238,25 @@ function App() {
     }
   };
 
-  // Daily goal auto-log
+ // Daily goal auto-log & Auto-reset
   useEffect(() => {
-    if (!isReady || goals.length === 0) return;
+    if (!isReady || !goals.length) return;
+    
     const todayStr = today();
-    const lastLogDate = goalLog.length > 0 ? goalLog[goalLog.length-1].date : null;
+    const lastLogDate = goalLog.length ? goalLog[goalLog.length - 1].date : null;
+    const lastResetDate = localStorage.getItem("lastResetDate");
+
+    // 1. 自動結算昨天成績
     if (lastLogDate && lastLogDate !== todayStr) {
-      const pct = Math.round((goals.filter(g=>g.done).length / goals.length)*100);
-      setGoalLog(p => [...p, { date:lastLogDate, pct, done:goals.filter(g=>g.done).length, total:goals.length, id:uid() }]);
+      const doneCount = goals.filter(g => g.done).length; // 提取變數，避免重複計算
+      const pct = Math.round((doneCount / goals.length) * 100);
+      setGoalLog(p => [...p, { date: lastLogDate, pct, done: doneCount, total: goals.length, id: uid() }]);
+    }
+
+    // 2. 自動重置今天目標
+    if (lastResetDate !== todayStr) {
+      setGoals(p => p.map(g => ({ ...g, done: false }))); // 縮寫箭頭函式，讓程式碼更簡潔
+      localStorage.setItem("lastResetDate", todayStr);
     }
   }, [isReady, goals]);
 
