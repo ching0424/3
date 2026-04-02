@@ -2037,31 +2037,55 @@ function LoginScreen({ onAuth, mode, lpBg }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // HOME / DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
-function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
+// 🌟 記得在括號裡加上 setTab 跟 memos
+function HomePage({ events, goals, books, notes, memos, goalLog, mode, lpBg, setTab }) {
   const todayStr = today();
   const todayEvs = events.filter(e=>e.date===todayStr);
   const upcomingEvs = events.filter(e=>e.date>todayStr).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
   const activeGoals = goals.slice(0,4);
   const recentBooks = books.filter(b=>b.status==="done").slice(-3);
   const readingNow = books.filter(b=>b.status==="reading").slice(0,3);
+  
+  // 擷取最新的 3 筆備忘錄
+  const recentMemos = memos ? memos.slice(0, 3) : [];
 
   const whoLabel = w=>w==="her"?"7ing":w==="him"?"KM":"共同";
   const whoColor = w=>w==="her"?COLORS.her:w==="him"?COLORS.him:COLORS.both;
 
- return (
+  // 🛠️ 超連結標題小工具
+  const SectionHeader = ({ icon, title, target }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div className="card-title" style={{ marginBottom: 0 }}>{icon} {title}</div>
+      <button 
+        onClick={() => setTab && setTab(target)} // 點擊切換頁面
+        style={{
+          background: "var(--soft)", color: "var(--primary)", border: "none", 
+          padding: "6px 12px", borderRadius: "16px", fontSize: 12, fontWeight: 700, 
+          cursor: "pointer", transition: "all 0.2s"
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "var(--primary)"; e.currentTarget.style.color = "#fff"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "var(--soft)"; e.currentTarget.style.color = "var(--primary)"; }}
+      >
+        查看全部 ➔
+      </button>
+    </div>
+  );
+
+  return (
     <div className="page">
-      {/* Header banner - meadow scene */}
-      {/* Banner: day = Meadow with GIF dogs, night = random stars & meteors */}
+      {/* 完美的日夜橫幅切換 */}
       {mode==="night" ? (
-          <NightSkyBanner lpBg={lpBg} />
+          <NightSkyBanner mode={mode} lpBg={lpBg} />
       ) : (
           <DayTimeMeadowBanner />
       )}
 
+      {/* 保持您原本完美的網格排版 */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
-        {/* Today's events */}
+        
+        {/* ── 1. 今日行程 (連結到 calendar) ── */}
         <div className="card">
-          <div className="card-title">📅 今日行程</div>
+          <SectionHeader icon="📅" title="今日行程" target="calendar" />
           {todayEvs.length===0?<div style={{color:"var(--muted)",fontSize:14}}>今天沒有行程，好好休息 ☁️</div>
             :todayEvs.map(e=>(
               <div key={e.id} className="event-item" style={{padding:"8px 10px",marginBottom:6}}>
@@ -2081,9 +2105,9 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
           </>}
         </div>
 
-        {/* Goals summary */}
+        {/* ── 2. 目標進度 (連結到 goals) ── */}
         <div className="card">
-          <div className="card-title">🎯 目標進度</div>
+          <SectionHeader icon="🎯" title="目標進度" target="goals" />
           {activeGoals.length===0?<div style={{color:"var(--muted)",fontSize:14}}>還沒有目標！</div>
             :(() => {
               const total = goals.length;
@@ -2113,9 +2137,24 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
           }
         </div>
 
-        {/* Currently reading */}
+        {/* ── 3. 新增！備忘錄欄位 (連結到 memo) ── */}
         <div className="card">
-          <div className="card-title">📖 正在閱讀</div>
+          <SectionHeader icon="📝" title="最新備忘錄" target="memo" />
+          {recentMemos.length===0?<div style={{color:"var(--muted)",fontSize:14}}>目前沒有記下任何事情喔！</div>
+            :recentMemos.map(m=>(
+              <div key={m.id} style={{padding:"10px 12px", background:"var(--soft)", borderRadius:10, marginBottom:8, border:"1px solid var(--card-border)"}}>
+                <div style={{fontSize:14, fontWeight:700, color:"var(--secondary)", marginBottom:4}}>{m.title || "無標題"}</div>
+                <div style={{fontSize:12, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                  {m.content || m.text || "沒有內容..."}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        {/* ── 4. 正在閱讀 (連結到 reading) ── */}
+        <div className="card">
+          <SectionHeader icon="📖" title="正在閱讀" target="reading" />
           {readingNow.length===0?<div style={{color:"var(--muted)",fontSize:14}}>快去找本書讀吧！</div>
             :readingNow.map(b=>(
               <div key={b.id} style={{display:"flex",gap:10,marginBottom:12,alignItems:"center"}}>
@@ -2131,9 +2170,9 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
           }
         </div>
 
-        {/* Recent memories */}
+        {/* ── 5. 最近回憶 (連結到 memory) ── */}
         <div className="card">
-          <div className="card-title">💌 最近回憶</div>
+          <SectionHeader icon="💌" title="最近回憶" target="memory" />
           {notes.length===0?<div style={{color:"var(--muted)",fontSize:14}}>記錄你們的美好時光！</div>
             :notes.slice(0,3).map(n=>(
               <div key={n.id} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
@@ -2146,6 +2185,7 @@ function HomePage({ events, goals, books, notes, goalLog, mode, lpBg }) {
             ))
           }
         </div>
+
       </div>
     </div>
   );
@@ -2340,7 +2380,7 @@ function App() {
           {/* Logo */}
           <div className="nav-logo">7ing<span>♡</span>KM</div>
         </nav>
-        {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} goalLog={goalLog} mode={mode} lpBg={lpBg}/>}
+        {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} memos={memos} goalLog={goalLog} mode={mode} lpBg={lpBg} setTab={setTab}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
         {tab==="goals"   && <GoalsPage goals={goals} setGoals={setGoals} goalLog={goalLog} setGoalLog={setGoalLog}/>}
         {tab==="reading" && <ReadingPage books={books} setBooks={setBooks} wishlist={wishlist} setWishlist={setWishlist}/>}
