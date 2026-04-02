@@ -2231,51 +2231,48 @@ function App() {
   const isReadyRef = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ─── 🌟 新增：全域滑動手勢 (側邊欄專用) ───
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const [touchEndY, setTouchEndY] = useState(null);
+  // ─── 🌟 修正版：使用 useRef 提升效能，防止吃掉點擊事件 ───
+  // 將座標紀錄在「不會觸發重新渲染」的 useRef 裡
+  const touchStart = useRef({ x: null, y: null });
+  const touchEnd = useRef({ x: null, y: null });
 
   const onTouchStart = (e) => {
-    setTouchStartX(e.targetTouches[0].clientX);
-    setTouchStartY(e.targetTouches[0].clientY); // 記錄 Y 座標，用來判斷是不是在上下捲動網頁
-    setTouchEndX(null);
-    setTouchEndY(null);
+    touchStart.current = {
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    };
+    touchEnd.current = { x: null, y: null }; // 每次按下時重置結束點
   };
 
   const onTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    setTouchEndY(e.targetTouches[0].clientY);
+    // 偷偷記錄，但不會讓畫面重新渲染！
+    touchEnd.current = {
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    };
   };
 
   const onTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
+    if (!touchStart.current.x || !touchEnd.current.x) return;
 
-    const distanceX = touchStartX - touchEndX;
-    const distanceY = Math.abs(touchStartY - touchEndY);
+    const distanceX = touchStart.current.x - touchEnd.current.x;
+    const distanceY = Math.abs(touchStart.current.y - touchEnd.current.y);
 
-    // 如果上下滑動的幅度大於 50px，代表使用者是在往下滑網頁，直接忽略，不觸發側邊欄
-    if (distanceY > 50) {
-      setTouchStartX(null);
-      setTouchEndX(null);
-      return;
-    }
+    // 如果上下滑動大於 50px (代表在捲動網頁)，忽略
+    if (distanceY > 50) return;
 
     // ➡️ 向右滑動 (打開選單)
-    // 條件：往右滑超過 50px，而且手指「必須從螢幕最左側 (X座標小於 80) 開始滑」
-    if (distanceX < -50 && touchStartX < 80) {
+    if (distanceX < -50 && touchStart.current.x < 80) {
       setMenuOpen(true);
     }
     // ⬅️ 向左滑動 (關閉選單)
-    // 條件：只要選單開著，往左滑超過 50px 就關閉
     else if (distanceX > 50 && menuOpen) {
       setMenuOpen(false);
     }
 
-    // 清空座標紀錄
-    setTouchStartX(null);
-    setTouchEndX(null);
+    // 清空紀錄
+    touchStart.current = { x: null, y: null };
+    touchEnd.current = { x: null, y: null };
   };
   const markLoaded = (key) => {
     loadedRef.current[key] = true;
