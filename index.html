@@ -720,27 +720,24 @@ function CalendarPage({ events, setEvents }) {
 // GOALS PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 function GoalCalendar({ goalLog, goals }) {
-  const [selectedLog, setSelectedLog] = useState(null); // 控制彈出視窗
-  const [monthOffset, setMonthOffset] = useState(0);    // 0代表本月，-1代表上個月...
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [monthOffset, setMonthOffset] = useState(0);
 
   // ─── 滑動手勢追蹤狀態 ───
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
-  
-  // 真實的「今天」時間
+
   const realNow = new Date();
   const tYear = realNow.getFullYear();
   const tMonth = realNow.getMonth();
   const tDay = realNow.getDate();
 
-  // 根據切換的 offset 計算要顯示的年月
   const displayDate = new Date(tYear, tMonth + monthOffset, 1);
   const year = displayDate.getFullYear();
   const month = displayDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
 
-  // 將歷史紀錄過濾出「當前顯示月份」的資料
   const logMap = {};
   goalLog.forEach(l => {
     const d = new Date(l.date.replace(/-/g, '/')); 
@@ -752,7 +749,6 @@ function GoalCalendar({ goalLog, goals }) {
   const blanks = Array(firstDayOfWeek).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // 切換月份的函數 (限制最多往前推 12 個月，且不能超過本月)
   const handlePrev = () => {
     if (monthOffset > -12) setMonthOffset(prev => prev - 1);
   };
@@ -760,9 +756,41 @@ function GoalCalendar({ goalLog, goals }) {
     if (monthOffset < 0) setMonthOffset(prev => prev + 1);
   };
 
+  // ─── 滑動邏輯處理 ───
+  const onTouchStart = (e) => {
+    setTouchEndX(null); // 重置結束點
+    setTouchStartX(e.targetTouches[0].clientX); // 記錄手指按下的 X 座標
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX); // 記錄手指移動時的 X 座標
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    
+    // 計算滑動距離：正數代表往左滑，負數代表往右滑
+    const distance = touchStartX - touchEndX;
+    const swipeThreshold = 50; // 只要滑動超過 50px 就觸發切換，避免誤觸
+
+    if (distance > swipeThreshold) {
+      handleNext(); // 往左滑 (看下一個月)
+    } else if (distance < -swipeThreshold) {
+      handlePrev(); // 往右滑 (看上一個月)
+    }
+
+    // 清理狀態
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
+
   return (
-    <div className="card" style={{ marginTop: 8 }}>
-      {/* 🌟 加上左右切換箭頭的標題區 */}
+    // 🌟 在最外層的 card 加上 touch 事件監聽
+    <div className="card" style={{ marginTop: 8 }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="card-title" style={{ marginBottom: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <button 
           onClick={handlePrev} 
@@ -788,12 +816,10 @@ function GoalCalendar({ goalLog, goals }) {
         {blanks.map((_, i) => <div key={`blank-${i}`} />)}
         
         {days.map(d => {
-          // 判斷這一格是不是真實的「今天」
           const isToday = (year === tYear && month === tMonth && d === tDay);
           let l = logMap[d];
           let pct = l ? l.pct : undefined;
           
-          // 如果是「今天」，直接讀取現有的 goals 即時顯示進度！
           if (isToday && goals && goals.length > 0) {
             const liveDone = goals.filter(g => g.done).length;
             pct = Math.round((liveDone / goals.length) * 100);
@@ -829,7 +855,6 @@ function GoalCalendar({ goalLog, goals }) {
         <span>🟢 100%</span><span>🟡 70-99%</span><span>🟠 40-69%</span><span>🔴 0-39%</span>
       </div>
 
-      {/* 🌟 點擊日期的回顧彈出視窗 */}
       {selectedLog && (
         <div className="overlay" onClick={() => setSelectedLog(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth: 340}}>
