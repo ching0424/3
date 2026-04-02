@@ -2428,7 +2428,16 @@ function App() {
           <div style={{flex:1}}/>
 
           {/* Logo */}
-          <div className="nav-logo">7ing<span>♡</span>KM</div>
+          <div 
+            className="nav-logo" 
+            onClick={() => {
+              setTab("home"); 
+              setMenuOpen(false); // 確保如果在選單打開時點擊，也能順便關閉選單
+            }} 
+            style={{ cursor: "pointer" }}
+          >
+            7ing<span>♡</span>KM
+          </div>
         </nav>
 
         {/* 分頁內容 */}
