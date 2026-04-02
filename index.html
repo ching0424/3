@@ -721,18 +721,22 @@ function CalendarPage({ events, setEvents }) {
 // ═══════════════════════════════════════════════════════════════════════════
 function GoalCalendar({ goalLog, goals }) {
   const [selectedLog, setSelectedLog] = useState(null); // 控制彈出視窗
+  const [monthOffset, setMonthOffset] = useState(0);    // 0代表本月，-1代表上個月...
 
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  // 真實的「今天」時間
+  const realNow = new Date();
+  const tYear = realNow.getFullYear();
+  const tMonth = realNow.getMonth();
+  const tDay = realNow.getDate();
+
+  // 根據切換的 offset 計算要顯示的年月
+  const displayDate = new Date(tYear, tMonth + monthOffset, 1);
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
 
-  // 取得今天確切的年月日，用來判斷「哪一格是今天」
-  const tYear = now.getFullYear();
-  const tMonth = now.getMonth();
-  const tDay = now.getDate();
-
+  // 將歷史紀錄過濾出「當前顯示月份」的資料
   const logMap = {};
   goalLog.forEach(l => {
     const d = new Date(l.date.replace(/-/g, '/')); 
@@ -744,9 +748,34 @@ function GoalCalendar({ goalLog, goals }) {
   const blanks = Array(firstDayOfWeek).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  // 切換月份的函數 (限制最多往前推 12 個月，且不能超過本月)
+  const handlePrev = () => {
+    if (monthOffset > -12) setMonthOffset(prev => prev - 1);
+  };
+  const handleNext = () => {
+    if (monthOffset < 0) setMonthOffset(prev => prev + 1);
+  };
+
   return (
     <div className="card" style={{ marginTop: 8 }}>
-      <div className="card-title" style={{ marginBottom: 15 }}>📅 {month + 1}月 打卡月曆</div>
+      {/* 🌟 加上左右切換箭頭的標題區 */}
+      <div className="card-title" style={{ marginBottom: 15, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <button 
+          onClick={handlePrev} 
+          disabled={monthOffset <= -12} 
+          style={{ background: "transparent", border: "none", fontSize: 18, cursor: monthOffset <= -12 ? "default" : "pointer", opacity: monthOffset <= -12 ? 0.2 : 0.8, color: "var(--secondary)" }}
+        >
+          ◀
+        </button>
+        <span>📅 {year}年 {month + 1}月 打卡</span>
+        <button 
+          onClick={handleNext} 
+          disabled={monthOffset >= 0} 
+          style={{ background: "transparent", border: "none", fontSize: 18, cursor: monthOffset >= 0 ? "default" : "pointer", opacity: monthOffset >= 0 ? 0.2 : 0.8, color: "var(--secondary)" }}
+        >
+          ▶
+        </button>
+      </div>
       
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, textAlign: "center", marginBottom: 12 }}>
         {["日", "一", "二", "三", "四", "五", "六"].map(day => (
@@ -755,15 +784,15 @@ function GoalCalendar({ goalLog, goals }) {
         {blanks.map((_, i) => <div key={`blank-${i}`} />)}
         
         {days.map(d => {
+          // 判斷這一格是不是真實的「今天」
           const isToday = (year === tYear && month === tMonth && d === tDay);
           let l = logMap[d];
           let pct = l ? l.pct : undefined;
           
-          // 🌟 如果是「今天」，不需要等半夜結算，直接讀取現有的 goals 即時顯示進度！
+          // 如果是「今天」，直接讀取現有的 goals 即時顯示進度！
           if (isToday && goals && goals.length > 0) {
             const liveDone = goals.filter(g => g.done).length;
             pct = Math.round((liveDone / goals.length) * 100);
-            // 偽造一個今天的 log，讓點擊時可以預覽今天的狀況
             l = { date: "今天", pct, done: liveDone, total: goals.length, tasks: goals, isLive: true };
           }
           
@@ -772,7 +801,7 @@ function GoalCalendar({ goalLog, goals }) {
           
           return (
             <div key={d} 
-              onClick={() => l && setSelectedLog(l)} // 點擊有紀錄的日期，打開回顧視窗
+              onClick={() => l && setSelectedLog(l)} 
               title={l ? `達成率: ${pct}% (點擊查看)` : "無紀錄"} 
               style={{
                 aspectRatio: "1/1", borderRadius: 10, background: bg,
@@ -781,7 +810,7 @@ function GoalCalendar({ goalLog, goals }) {
                 boxShadow: l ? "0 2px 6px #0001" : "none",
                 cursor: l ? "pointer" : "default",
                 transition: "transform 0.2s",
-                border: isToday ? "2px solid var(--primary)" : "none" // 今天加上框線特別標示
+                border: isToday ? "2px solid var(--primary)" : "none" 
             }}
             onMouseEnter={e => e.currentTarget.style.transform = l ? "scale(1.15)" : "none"}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
@@ -811,7 +840,6 @@ function GoalCalendar({ goalLog, goals }) {
               共完成 {selectedLog.done} / {selectedLog.total} 個目標
             </div>
 
-            {/* 任務明細列表 */}
             <div style={{background: "var(--bg)", borderRadius: 12, padding: 16, maxHeight: "40vh", overflowY: "auto"}}>
               {selectedLog.tasks && selectedLog.tasks.length > 0 ? (
                 selectedLog.tasks.map((t, i) => (
