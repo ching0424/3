@@ -1505,7 +1505,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   const [detail, setDetail] = useState(null);
   const [wishSearching, setWishSearching] = useState(false);
   const [wishPoster, setWishPoster] = useState("");
-  const wishTimer = useState(null);
+  const wishTimer = useRef(null);
 
   // 🌟 篩選器的狀態
   const [filterType, setFilterType] = useState("all");
@@ -1522,9 +1522,13 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   const handleWishTitle = async e => {
     const val = e.target.value;
     setWishForm(f=>({...f,title:val}));
-    if (wishTimer[0]) clearTimeout(wishTimer[0]);
+    
+    // 🌟 使用 .current 來讀取和寫入保險箱
+    if (wishTimer.current) clearTimeout(wishTimer.current);
+    
     if (val.length < 2) return;
-    wishTimer[0] = setTimeout(async()=>{
+    
+    wishTimer.current = setTimeout(async()=>{
       setWishSearching(true);
       const r = await searchMediaPoster(val, wishForm.type);
       setWishSearching(false);
