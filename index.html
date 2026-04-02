@@ -723,6 +723,10 @@ function GoalCalendar({ goalLog, goals }) {
   const [selectedLog, setSelectedLog] = useState(null); // 控制彈出視窗
   const [monthOffset, setMonthOffset] = useState(0);    // 0代表本月，-1代表上個月...
 
+  // ─── 滑動手勢追蹤狀態 ───
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  
   // 真實的「今天」時間
   const realNow = new Date();
   const tYear = realNow.getFullYear();
