@@ -1558,11 +1558,23 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   return (
     <div className="page">
       {/* 注入橫向捲動的 CSS */}
-      <style>{`
-        .media-scroller { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
+     <style>{`
+        .media-scroller { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
         .media-scroller::-webkit-scrollbar { height: 6px; }
         .media-scroller::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-        .media-scroller .book-card { min-width: 130px; flex-shrink: 0; scroll-snap-align: start; }
+        
+        /* 🌟 關鍵修復：強制設定卡片的寬度，並鎖死海報高度，讓它跟下方網格一樣精緻小巧 */
+        .media-scroller .book-card { 
+          width: 110px; 
+          min-width: 110px; 
+          flex-shrink: 0; 
+          scroll-snap-align: start; 
+        }
+        .media-scroller .book-cover, .media-scroller .book-cover-placeholder { 
+          height: 160px !important; 
+          width: 100%; 
+          object-fit: cover; 
+        }
       `}</style>
 
       <div className="page-title" style={{position:"relative"}}>🍿 影劇清單</div>
