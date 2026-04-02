@@ -1640,10 +1640,20 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                     <div className="book-info">
                       <div className="book-title-text">{m.title}</div>
                       <Stars n={m.rating}/>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                        <span className={`badge badge-${m.who}`} style={{fontSize:10}}>{whoLabel(m.who)}</span>
-                        {m.watchedAt&&<span style={{fontSize:10,color:"var(--muted)"}}>{m.watchedAt}</span>}
+                      
+                      {/* 🌟 調整排版：時間獨立一行，標籤放最底下 */}
+                      <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
+                         {m.watchedAt && (
+                           <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>
+                             {m.watchedAt}
+                           </div>
+                         )}
+                         <div style={{display: "flex", gap: 4, flexWrap: "wrap"}}>
+                           <span className={`badge badge-${m.who}`} style={{fontSize: 9}}>{whoLabel(m.who)}</span>
+                           <span className="badge badge-both" style={{fontSize: 9, background: "var(--soft)", color: "var(--text)"}}>{m.genre || "其他"}</span>
+                         </div>
                       </div>
+
                     </div>
                   </div>
                 ))}
@@ -1663,14 +1673,26 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                     <div className="book-info">
                       <div className="book-title-text">{m.title}</div>
                       <Stars n={m.rating}/>
+
+                      {/* 🌟 這裡也套用相同的排版邏輯 */}
+                      <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
+                         {m.watchedAt && (
+                           <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>
+                             {m.watchedAt}
+                           </div>
+                         )}
+                         <div style={{display: "flex", gap: 4, flexWrap: "wrap"}}>
+                           <span className={`badge badge-${m.who}`} style={{fontSize: 9}}>{whoLabel(m.who)}</span>
+                           <span className="badge badge-both" style={{fontSize: 9, background: "var(--soft)", color: "var(--text)"}}>{m.genre || "其他"}</span>
+                         </div>
+                      </div>
+
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </>
-      )}
 
       {/* 願望清單 Tab */}
       {tab==="wish"&&(
