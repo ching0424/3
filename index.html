@@ -1050,139 +1050,112 @@ function GoalCalendar({ goalLog, goals }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// READING PAGE
+// READING PAGE (書櫃清單)
 // ═══════════════════════════════════════════════════════════════════════════
-async function searchBookCandidates(title) {
+const BOOK_GENRES = ["小說", "散文", "知識", "學術", "其他"];
+
+// 🌟 新增：利用 Google Books API 自動抓書封與作者
+async function searchBookCover(title) {
   try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=5`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&maxResults=1`);
     const data = await res.json();
-    if (!data.items?.length) return [];
-    return data.items.map(item => {
-      const info = item.volumeInfo;
-      const cover = info.imageLinks?.thumbnail
-        ?.replace("http://","https://")
-        ?.replace("zoom=1","zoom=2") || "";
-      return {
-        title: info.title || "",
-        author: info.authors?.[0] || "",
-        cover,
-      };
-    }).filter(b => b.cover);
-  } catch { return []; }
+    if (data.items && data.items.length > 0) {
+      const info = data.items[0].volumeInfo;
+      // Google 圖書的圖片網址預設是 http，我們手動改成 https 避免瀏覽器擋圖
+      const cover = info.imageLinks?.thumbnail?.replace("http:", "https:") || "";
+      return { title: info.title, author: info.authors?.[0] || "", cover };
+    }
+    return null;
+  } catch { return null; }
 }
 
 function BookModal({ book, onClose, onSave }) {
-  const { useRef, useEffect: ue } = window.React || {};
-  const [form, setForm] = useState(book || { title:"", author:"", who:"her", status:"reading", finishedAt:"", review:"", rating:0, coverUrl:"" });
-  const [coverPreview, setCoverPreview] = useState(form.coverUrl||"");
+  const [form, setForm] = useState(book || { title:"", author:"", genre:"小說", who:"both", status:"done", readAt:"", review:"", rating:0, coverUrl:"" });
   const [searching, setSearching] = useState(false);
-  const [candidates, setCandidates] = useState([]);
-  const [searchMsg, setSearchMsg] = useState("");
-  const timerRef = { current: null };
+  const [coverPreview, setCoverPreview] = useState(book?.coverUrl||"");
+  
+  // 🌟 使用 useRef 避免計時器 bug
+  const timerRef = useRef(null);
 
   const handleTitleChange = e => {
     const val = e.target.value;
     setForm(f=>({...f,title:val}));
-    setCandidates([]); setSearchMsg(""); setCoverPreview("");
+    
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (val.trim().length < 1) return;
+    if (val.length < 2) return;
+    
     timerRef.current = setTimeout(async () => {
-      setSearching(true); setSearchMsg("🔍 搜尋中…");
-      const results = await searchBookCandidates(val);
+      setSearching(true);
+      const result = await searchBookCover(val);
       setSearching(false);
-      if (results.length > 0) {
-        setCandidates(results);
-        // Auto-select first result
-        setCoverPreview(results[0].cover);
-        setForm(f=>({ ...f, author: f.author || results[0].author }));
-        setSearchMsg(`✓ 找到 ${results.length} 個結果，已自動選第一本`);
-      } else {
-        setSearchMsg("找不到封面，可手動貼上網址");
+      if (result) {
+        if (result.cover) setCoverPreview(result.cover);
+        // 如果原本沒填作者，自動補上 Google 抓到的作者
+        if (!form.author && result.author) {
+          setForm(f => ({...f, author: result.author}));
+        }
       }
-    }, 700);
+    }, 800);
   };
 
-  const pickCandidate = c => {
-    setCoverPreview(c.cover);
-    setForm(f=>({...f, author: c.author || f.author }));
-    setCandidates([]);
-    setSearchMsg("✓ 已選擇");
-  };
-
-  const save = () => { if(!form.title) return; onSave({...form, id:book?.id||uid(), coverUrl:coverPreview}); };
+  const save = () => { if(!form.title) return; onSave({...form,id:book?.id||uid(),coverUrl:coverPreview}); };
 
   return (
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-title">{book?"編輯書本":"新增書本"}</div>
-
+        <div className="modal-title">{book?"編輯書籍":"新增書籍"}</div>
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
-          {/* Cover preview */}
-          <div style={{flexShrink:0}}>
-            <div style={{width:90,height:126,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+          <div style={{flexShrink:0,textAlign:"center"}}>
+            <div style={{width:90,height:130,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative", boxShadow: "4px 0 8px rgba(0,0,0,0.1)" /* 書本立體陰影 */}}>
               {coverPreview
                 ? <img src={coverPreview} alt="cover" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setCoverPreview("")}/>
-                : <span style={{fontSize:36}}>{searching?"⏳":"📚"}</span>
-              }
-              {searching&&(
-                <div style={{position:"absolute",inset:0,background:"#ffffffbb",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{width:24,height:24,border:`3px solid ${COLORS.accent}`,borderTopColor:COLORS.primary,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-                </div>
-              )}
+                : <span style={{fontSize:32}}>{searching?"⏳":"📖"}</span>}
+              {searching&&<div style={{position:"absolute",inset:0,background:"#fff8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>⏳</div>}
             </div>
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            {searchMsg&&<div style={{fontSize:10,color:searchMsg.startsWith("✓")?COLORS.green:COLORS.muted,marginTop:4,maxWidth:90,lineHeight:1.3}}>{searchMsg}</div>}
           </div>
-
           <div style={{flex:1}}>
-            <label>書名（輸入即自動搜尋封面）</label>
-            <input value={form.title} onChange={handleTitleChange} placeholder="輸入書名…" autoFocus/>
+            <label>書名（輸入自動找書封&作者）</label>
+            <input value={form.title} onChange={handleTitleChange} placeholder="輸入書名…"/>
+            {searching&&<div style={{fontSize:12,color:"var(--primary)",marginTop:4}}>🔍 翻找圖書館中…</div>}
             <label>作者</label>
-            <input value={form.author} onChange={e=>setForm(f=>({...f,author:e.target.value}))} placeholder="自動填入，可修改"/>
+            <input value={form.author} onChange={e=>setForm(f=>({...f,author:e.target.value}))} placeholder="作者名稱"/>
           </div>
         </div>
 
-        {/* Candidate picker */}
-        {candidates.length > 1 && (
-          <div style={{marginTop:12}}>
-            <div style={{fontSize:12,color:"var(--muted)",marginBottom:8,fontWeight:700}}>選擇封面（滑動查看更多）</div>
-            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
-              {candidates.map((c,i)=>(
-                <div key={i} onClick={()=>pickCandidate(c)} style={{flexShrink:0,cursor:"pointer",textAlign:"center",border:`2px solid ${coverPreview===c.cover?COLORS.primary:COLORS.soft}`,borderRadius:8,padding:4,background:coverPreview===c.cover?COLORS.soft:"#fff",transition:"all .15s"}}>
-                  <img src={c.cover} alt={c.title} style={{width:60,height:85,objectFit:"cover",borderRadius:5,display:"block"}} onError={e=>e.target.closest("div").style.display="none"}/>
-                  <div style={{fontSize:9,color:"var(--muted)",marginTop:3,maxWidth:64,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{marginTop:6}}>
-          <label style={{marginTop:8}}>封面網址（可手動覆蓋）</label>
-          <input value={coverPreview} onChange={e=>setCoverPreview(e.target.value)} placeholder="或直接貼上圖片網址"/>
-        </div>
-
+        <label style={{marginTop: 12}}>書封網址（自動取得或手動貼上）</label>
+        <input value={coverPreview} onChange={e=>setCoverPreview(e.target.value)} placeholder="https://..."/>
+        
         <div className="form-row" style={{marginTop:12}}>
-          <div className="form-group"><label>誰在讀</label>
+          <div className="form-group"><label>歸屬書櫃</label>
             <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
-              <option value="her">7ing</option><option value="him">KM</option><option value="both">一起</option>
+              <option value="both">📚 共同書櫃</option><option value="her">👧 7ing 的書櫃</option><option value="him">👦 KM 的書櫃</option>
             </select>
           </div>
-          <div className="form-group"><label>狀態</label>
-            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-              <option value="reading">閱讀中</option>
-              <option value="done">已讀完</option>
+          <div className="form-group"><label>內容分類</label>
+            <select value={form.genre} onChange={e=>setForm(f=>({...f,genre:e.target.value}))}>
+              {BOOK_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
         </div>
-        {form.status==="done"&&<><label>完成日期</label><input type="date" value={form.finishedAt} onChange={e=>setForm(f=>({...f,finishedAt:e.target.value}))}/></>}
+
+        <div className="form-row" style={{marginTop:8}}>
+          <div className="form-group"><label>閱讀狀態</label>
+            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+              <option value="reading">🔖 正在閱讀</option><option value="done">✔️ 已讀完</option>
+            </select>
+          </div>
+          <div className="form-group">
+            {(form.status==="done"||form.status==="reading")&&<><label>{form.status==="done"?"讀完日期":"開始日期"}</label><input type="date" value={form.readAt} onChange={e=>setForm(f=>({...f,readAt:e.target.value}))}/></>}
+          </div>
+        </div>
+
         <label>評分</label>
         <Stars n={form.rating} onChange={r=>setForm(f=>({...f,rating:r}))}/>
-        <label>心得（可選）</label>
-        <textarea value={form.review} onChange={e=>setForm(f=>({...f,review:e.target.value}))} placeholder="簡短記錄你的感想…"/>
+        <label>心得筆記（可選）</label>
+        <textarea value={form.review} onChange={e=>setForm(f=>({...f,review:e.target.value}))} placeholder="記下喜歡的句子或心得..."/>
         <div className="modal-actions">
           <button className="btn btn-soft" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" onClick={save}>儲存</button>
+          <button className="btn btn-primary" onClick={save}>收進書櫃</button>
         </div>
       </div>
     </div>
@@ -1191,55 +1164,217 @@ function BookModal({ book, onClose, onSave }) {
 
 function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
   const confirmDel = useConfirm();
-  const [tab, setTab] = useState("reading");
-  const [showBook, setShowBook] = useState(false);
+  const [tab, setTab] = useState("done"); 
+  const [showModal, setShowModal] = useState(false);
   const [editBook, setEditBook] = useState(null);
+  
   const [showWish, setShowWish] = useState(false);
-  const [wishForm, setWishForm] = useState({ title:"", author:"", who:"both" });
+  const [wishForm, setWishForm] = useState({ title:"", author:"", genre:"小說", who:"both", coverUrl:"" });
   const [detail, setDetail] = useState(null);
+  const [wishSearching, setWishSearching] = useState(false);
+  const [wishCover, setWishCover] = useState("");
+  const wishTimer = useRef(null);
 
-  const saveBook = b => {
-    setBooks(p=>editBook? p.map(x=>x.id===b.id?b:x) : [...p,b]);
-    setShowBook(false); setEditBook(null);
-  };
+  // 🌟 書櫃專屬篩選器
+  const [filterWho, setFilterWho] = useState("all");
+  const [filterGenre, setFilterGenre] = useState("all");
+  const [filterRating, setFilterRating] = useState("all");
+
+  const saveBook = b => { setBooks(p=>editBook?p.map(x=>x.id===b.id?b:x):[...p,b]); setShowModal(false); setEditBook(null); };
   const delBook = id => { setBooks(p=>p.filter(b=>b.id!==id)); setDetail(null); };
-  const addWish = () => { if(!wishForm.title) return; setWishlist(p=>[...p,{...wishForm,id:uid()}]); setShowWish(false); setWishForm({title:"",author:"",who:"both"}); };
+  const addWish = () => { if(!wishForm.title) return; setWishlist(p=>[...p,{...wishForm,id:uid(),coverUrl:wishCover}]); setShowWish(false); setWishForm({title:"",author:"",genre:"小說",who:"both",coverUrl:""}); setWishCover(""); };
   const delWish = id => setWishlist(p=>p.filter(w=>w.id!==id));
-  const moveToReading = w => { setBooks(p=>[...p,{...w,id:uid(),status:"reading",finishedAt:"",review:"",rating:0,coverUrl:""}]); setWishlist(p=>p.filter(x=>x.id!==w.id)); };
+  const moveToRead = w => { setBooks(p=>[...p,{...w,id:uid(),status:"reading",readAt:"",review:"",rating:0}]); setWishlist(p=>p.filter(x=>x.id!==w.id)); };
+  
+  const whoBookLabel = w=>w==="her"?"7ing":w==="him"?"KM":"共同";
 
-  const whoLabel = w=>w==="her"?"7ing":w==="him"?"KM":"一起";
-  const filtered = books.filter(b=>b.status===tab);
+  const handleWishTitle = async e => {
+    const val = e.target.value;
+    setWishForm(f=>({...f,title:val}));
+    if (wishTimer.current) clearTimeout(wishTimer.current);
+    if (val.length < 2) return;
+    
+    wishTimer.current = setTimeout(async()=>{
+      setWishSearching(true);
+      const r = await searchBookCover(val);
+      setWishSearching(false);
+      if(r) {
+        if(r.cover) setWishCover(r.cover);
+        if(!wishForm.author && r.author) setWishForm(f=>({...f, author: r.author}));
+      }
+    }, 800);
+  };
+
+  // 過濾書籍
+  const filteredBooks = books.filter(b => {
+    if (filterWho !== "all" && b.who !== filterWho && (b.who || "both") !== filterWho) return false;
+    if (filterGenre !== "all" && b.genre !== filterGenre && (b.genre || "其他") !== filterGenre) return false;
+    if (filterRating === "awesome" && b.rating < 4) return false;
+    if (filterRating === "okay" && b.rating >= 4) return false;
+    return true;
+  });
+
+  const readingNow = filteredBooks.filter(b => b.status === "reading");
+  const recentlyDone = filteredBooks
+    .filter(b => b.status === "done")
+    .sort((a,b) => (b.readAt || "").localeCompare(a.readAt || ""))
+    .slice(0, 10);
+
+  const filteredWishlist = wishlist.filter(w => {
+    if (filterWho !== "all" && w.who !== filterWho && (w.who || "both") !== filterWho) return false;
+    if (filterGenre !== "all" && w.genre !== filterGenre && (w.genre || "其他") !== filterGenre) return false;
+    return true;
+  });
 
   return (
     <div className="page">
-      <div className="page-title" style={{position:"relative"}}>📖 閱讀清單</div>
-      <div className="tab-row">
-        <button className={`tab-pill${tab==="reading"?" active":""}`} onClick={()=>setTab("reading")}>閱讀中</button>
-        <button className={`tab-pill${tab==="done"?" active":""}`} onClick={()=>setTab("done")}>已讀完</button>
-        <button className={`tab-pill${tab==="wish"?" active":""}`} onClick={()=>setTab("wish")}>願望清單</button>
+      {/* 書籍特有的橫向捲動 CSS (帶有書本立體感) */}
+      <style>{`
+        .media-scroller { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
+        .media-scroller::-webkit-scrollbar { height: 6px; }
+        .media-scroller::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+        .media-scroller .book-card { width: 110px; min-width: 110px; flex-shrink: 0; scroll-snap-align: start; }
+        .media-scroller .book-cover, .media-scroller .book-cover-placeholder { 
+          height: 160px !important; width: 100%; object-fit: cover; 
+          border-radius: 4px 8px 8px 4px; /* 書本造型邊角 */
+          box-shadow: inset 4px 0 10px rgba(0,0,0,0.1); /* 書脊陰影 */
+        }
+        /* 閱讀中的專屬書籤動畫 */
+        .bookmark-tag {
+          position: absolute; top: -4px; right: 12px; background: var(--accent); color: white;
+          padding: 4px 6px; font-size: 10px; font-weight: bold; border-radius: 0 0 4px 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 2;
+        }
+      `}</style>
+
+      <div className="page-title" style={{position:"relative"}}>📚 專屬圖書館</div>
+      
+      <div className="tab-row" style={{marginBottom: 16}}>
+        <button className={`tab-pill${tab==="done"?" active":""}`} onClick={()=>setTab("done")}>我們的書櫃</button>
+        <button className={`tab-pill${tab==="wish"?" active":""}`} onClick={()=>setTab("wish")}>購書/借書清單</button>
       </div>
 
-      {tab!=="wish"&&(
+      {/* 🌟 專屬篩選器 */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, padding: "12px", background: "var(--soft)", borderRadius: "14px", border: "1px solid var(--card-border)" }}>
+        <select style={{flex: 1, minWidth: "110px", padding: "6px 10px", fontSize: 13}} value={filterWho} onChange={e=>setFilterWho(e.target.value)}>
+          <option value="all">📚 所有書櫃</option><option value="both">🤝 共同書櫃</option><option value="her">👧 7ing 的</option><option value="him">👦 KM 的</option>
+        </select>
+        <select style={{flex: 1, minWidth: "100px", padding: "6px 10px", fontSize: 13}} value={filterGenre} onChange={e=>setFilterGenre(e.target.value)}>
+          <option value="all">🏷️ 所有類型</option>{BOOK_GENRES.map(g=><option key={g} value={g}>{g}</option>)}
+        </select>
+        {tab === "done" && (
+          <select style={{flex: 1, minWidth: "120px", padding: "6px 10px", fontSize: 13}} value={filterRating} onChange={e=>setFilterRating(e.target.value)}>
+            <option value="all">⭐ 所有評價</option><option value="awesome">🌟 必讀神作 (4~5星)</option><option value="okay">💬 普通 (3星以下)</option>
+          </select>
+        )}
+      </div>
+
+      {tab==="done"&&(
         <>
-          <div style={{marginBottom:16}}>
-            <button className="btn btn-primary" onClick={()=>{setEditBook(null);setShowBook(true)}}>＋ 新增書本</button>
-          </div>
-          {filtered.length===0&&<div className="empty">📚 還沒有書本，快新增吧！</div>}
-          <div className="book-grid">
-            {filtered.map(b=>(
-              <div key={b.id} className="book-card" onClick={()=>setDetail(b)}>
-                {b.coverUrl
-                  ? <img className="book-cover" src={b.coverUrl} alt={b.title} onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex"}}/>
-                  : null}
-                <div className="book-cover-placeholder" style={{display:b.coverUrl?"none":"flex"}}>📚</div>
-                <div className="book-info">
-                  <div className="book-title-text">{b.title}</div>
-                  <div className="book-author">{b.author}</div>
-                  <div style={{marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <Stars n={b.rating}/>
-                    <span className={`badge badge-${b.who}`}>{whoLabel(b.who)}</span>
+          <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>{setEditBook(null);setShowModal(true)}}>＋ 收藏新書</button>
+          {filteredBooks.length===0 && <div className="empty">書櫃空空的，快去新增書籍吧！</div>}
+
+          {/* 📖 正在閱讀 (橫向捲動) */}
+          {readingNow.length > 0 && (
+            <div style={{marginBottom: 24}}>
+              <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8}}>
+                📖 正在閱讀 <span style={{fontSize: 12, background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: 10}}>{readingNow.length}</span>
+              </div>
+              <div className="media-scroller">
+                {readingNow.map(b=>(
+                  <div key={b.id} className="book-card" onClick={()=>setDetail(b)} style={{position: "relative"}}>
+                    <div className="bookmark-tag">🔖 Reading</div>
+                    {b.coverUrl ? <img className="book-cover" src={b.coverUrl} alt={b.title} onError={e=>{e.target.style.display="none"}}/> : <div className="book-cover-placeholder" style={{background:"linear-gradient(135deg,#6b705c,#a5a58d)"}}>📖</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{b.title}</div>
+                      <div style={{fontSize: 10, color: "var(--muted)", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{b.author||"未知作者"}</div>
+                      <div style={{display:"flex", gap:4}}>
+                        <span className={`badge badge-${b.who}`} style={{fontSize:9}}>{whoBookLabel(b.who)}</span>
+                        <span className="badge badge-both" style={{fontSize:9, background:"var(--soft)", color:"var(--text)"}}>{b.genre||"其他"}</span>
+                      </div>
+                    </div>
                   </div>
-                  {b.finishedAt&&<div style={{fontSize:11,color:"var(--muted)",marginTop:4}}>✅ {b.finishedAt}</div>}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ✔️ 近期讀完 (橫向捲動) */}
+          {recentlyDone.length > 0 && (
+            <div style={{marginBottom: 24}}>
+              <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12}}>
+                ✔️ 近期讀完
+              </div>
+              <div className="media-scroller">
+                {recentlyDone.map(b=>(
+                  <div key={b.id} className="book-card" onClick={()=>setDetail(b)}>
+                    {b.coverUrl ? <img className="book-cover" src={b.coverUrl} alt={b.title} onError={e=>{e.target.style.display="none"}}/> : <div className="book-cover-placeholder" style={{background:"linear-gradient(135deg,#6b705c,#a5a58d)"}}>📖</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{b.title}</div>
+                      <Stars n={b.rating}/>
+                      
+                      <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
+                         {b.readAt && <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>{b.readAt}</div>}
+                         <div style={{display: "flex", gap: 4, flexWrap: "wrap"}}>
+                           <span className={`badge badge-${b.who}`} style={{fontSize: 9}}>{whoBookLabel(b.who)}</span>
+                           <span className="badge badge-both" style={{fontSize: 9, background: "var(--soft)", color: "var(--text)"}}>{b.genre || "其他"}</span>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 所有書籍 Grid */}
+          {filteredBooks.length > 0 && (
+            <div>
+              <hr className="divider" />
+              <div style={{fontSize: 16, fontWeight: 700, color: "var(--muted)", marginBottom: 12}}>所有藏書 ({filteredBooks.length})</div>
+              <div className="book-grid">
+                {filteredBooks.map(b=>(
+                  <div key={b.id} className="book-card" onClick={()=>setDetail(b)}>
+                    {b.coverUrl ? <img className="book-cover" src={b.coverUrl} alt={b.title} /> : <div className="book-cover-placeholder">📖</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{b.title}</div>
+                      <Stars n={b.rating}/>
+                      <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
+                         {b.readAt && <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>{b.readAt}</div>}
+                         <div style={{display: "flex", gap: 4, flexWrap: "wrap"}}>
+                           <span className={`badge badge-${b.who}`} style={{fontSize: 9}}>{whoBookLabel(b.who)}</span>
+                           <span className="badge badge-both" style={{fontSize: 9, background: "var(--soft)", color: "var(--text)"}}>{b.genre || "其他"}</span>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 購書清單 Tab */}
+      {tab === "wish" && (
+        <>
+          <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>setShowWish(true)}>＋ 加入想看書單</button>
+          {filteredWishlist.length===0&&<div className="empty">🌟 書單清空囉，去找找新書吧！</div>}
+          <div className="book-grid">
+            {filteredWishlist.map(w=>(
+              <div key={w.id} className="book-card">
+                {w.coverUrl ? <img className="book-cover" src={w.coverUrl} alt={w.title}/> : <div className="book-cover-placeholder">📖</div>}
+                <div className="book-info">
+                  <div className="book-title-text">{w.title}</div>
+                  <div style={{fontSize: 10, color: "var(--muted)", marginBottom: 4}}>{w.author||"未知作者"}</div>
+                  <div style={{display:"flex", gap:4, marginBottom:6}}>
+                    <span className={`badge badge-${w.who}`} style={{fontSize:9}}>{whoBookLabel(w.who)}</span>
+                    <span className="badge badge-both" style={{fontSize:9, background:"var(--soft)", color:"var(--text)"}}>{w.genre||"其他"}</span>
+                  </div>
+                  <div style={{display:"flex",gap:4,marginTop:6}}>
+                    <button className="btn btn-sm btn-soft" style={{flex:1,fontSize:10}} onClick={()=>moveToRead(w)}>➡️ 開始讀</button>
+                    <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要從書單移除嗎？"))delWish(w.id);}}>🗑️</button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1247,65 +1382,70 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         </>
       )}
 
-      {tab==="wish"&&(
-        <>
-          <button className="btn btn-primary" style={{marginBottom:16}} onClick={()=>setShowWish(true)}>＋ 加入願望清單</button>
-          {wishlist.length===0&&<div className="empty">🌟 加入你們想讀的書！</div>}
-          {wishlist.map(w=>(
-            <div key={w.id} className="wish-item">
-              <div>📕</div>
-              <div>
-                <div className="wish-title">{w.title}</div>
-                <div className="wish-who">{w.author}</div>
-              </div>
-              <span className={`badge badge-${w.who}`}>{whoLabel(w.who)}</span>
-              <button className="btn btn-sm btn-soft" onClick={()=>moveToReading(w)}>開始讀</button>
-              <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要從願望清單移除嗎？"))delWish(w.id);}}>🗑️</button>
-            </div>
-          ))}
-        </>
-      )}
-
+      {/* 詳細資訊 Modal */}
       {confirmDel.Dialog}
-      {/* Detail Modal */}
       {detail&&(
         <div className="overlay" onClick={()=>setDetail(null)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",gap:16,marginBottom:16}}>
               {detail.coverUrl
-                ? <img src={detail.coverUrl} alt={detail.title} style={{width:90,height:130,objectFit:"cover",borderRadius:10}} onError={e=>e.target.style.display="none"}/>
-                : <div style={{width:90,height:130,background:"var(--soft)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40}}>📚</div>
-              }
+                ? <img src={detail.coverUrl} alt={detail.title} style={{width:90,height:130,objectFit:"cover",borderRadius:"4px 8px 8px 4px",boxShadow:"inset 4px 0 10px rgba(0,0,0,0.1)"}}/>
+                : <div style={{width:90,height:130,background:"linear-gradient(135deg,#6b705c,#a5a58d)",borderRadius:"4px 8px 8px 4px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>📖</div>}
               <div>
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
-                <div style={{color:"var(--muted)",fontSize:14}}>{detail.author}</div>
-                <Stars n={detail.rating}/>
-                <div style={{marginTop:8}}><span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span></div>
-                {detail.finishedAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>完成日：{detail.finishedAt}</div>}
+                <div style={{fontSize: 14, color: "var(--muted)", marginBottom: 8}}>{detail.author || "未知作者"}</div>
+                
+                <div style={{display:"flex", gap:6, marginBottom:8}}>
+                  <span className={`badge badge-${detail.who}`}>{whoBookLabel(detail.who)}的</span>
+                  <span className="badge badge-both" style={{background:"var(--soft)", color:"var(--text)"}}>{detail.genre||"其他"}</span>
+                  {detail.status === "reading" && <span className="badge badge-both" style={{background:"var(--accent)", color:"#fff"}}>🔖 閱讀中</span>}
+                </div>
+                {detail.status === "done" && <Stars n={detail.rating}/>}
+                {detail.readAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>{detail.status==="done"?"完讀日：":"開讀日："}{detail.readAt}</div>}
               </div>
             </div>
-            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,color:"var(--text)",lineHeight:1.8}}>{detail.review}</div></>}
+            {detail.review&&<><hr className="divider"/><div style={{fontSize:14,lineHeight:1.8, whiteSpace: "pre-wrap"}}>{detail.review}</div></>}
             <div className="modal-actions">
-              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這本書嗎？")){delBook(detail.id)}}}>刪除</button>
-              <button className="btn btn-soft" onClick={()=>{setEditBook(detail);setDetail(null);setShowBook(true)}}>編輯</button>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要丟掉這本書嗎？")){delBook(detail.id)}}}>刪除</button>
+              <button className="btn btn-soft" onClick={()=>{setEditBook(detail);setDetail(null);setShowModal(true)}}>編輯</button>
               <button className="btn btn-primary" onClick={()=>setDetail(null)}>關閉</button>
             </div>
           </div>
         </div>
       )}
 
-      {showBook&&<BookModal book={editBook} onClose={()=>{setShowBook(false);setEditBook(null)}} onSave={saveBook}/>}
+      {/* 編輯 Modal */}
+      {showModal&&<BookModal book={editBook} onClose={()=>{setShowModal(false);setEditBook(null)}} onSave={saveBook}/>}
 
+      {/* 購書清單 Modal */}
       {showWish&&(
         <div className="overlay" onClick={()=>setShowWish(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">加入願望清單</div>
-            <label>書名</label><input value={wishForm.title} onChange={e=>setWishForm(f=>({...f,title:e.target.value}))} placeholder="書名"/>
-            <label>作者（可選）</label><input value={wishForm.author} onChange={e=>setWishForm(f=>({...f,author:e.target.value}))} placeholder="作者"/>
-            <label>想讀的人</label>
-            <select value={wishForm.who} onChange={e=>setWishForm(f=>({...f,who:e.target.value}))}>
-              <option value="her">7ing</option><option value="him">KM</option><option value="both">一起</option>
-            </select>
+            <div className="modal-title">加入想看書單</div>
+            <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{width:70,height:100,borderRadius:"2px 6px 6px 2px",overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"inset 3px 0 6px rgba(0,0,0,0.1)"}}>
+                {wishCover?<img src={wishCover} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:24}}>{wishSearching?"⏳":"📖"}</span>}
+              </div>
+              <div style={{flex:1}}>
+                <label>書名</label>
+                <input value={wishForm.title} onChange={handleWishTitle} placeholder="輸入書名自動搜尋…"/>
+                {wishSearching&&<div style={{fontSize:11,color:"var(--primary)",marginTop:3}}>🔍 圖書館翻找中…</div>}
+                <label style={{marginTop: 6}}>作者</label>
+                <input value={wishForm.author} onChange={e=>setWishForm(f=>({...f,author:e.target.value}))} placeholder="作者名稱"/>
+              </div>
+            </div>
+            <div className="form-row" style={{marginTop:12}}>
+              <div className="form-group"><label>歸屬書櫃</label>
+                <select value={wishForm.who} onChange={e=>setWishForm(f=>({...f,who:e.target.value}))}>
+                  <option value="both">📚 共同書櫃</option><option value="her">👧 7ing 的書櫃</option><option value="him">👦 KM 的書櫃</option>
+                </select>
+              </div>
+              <div className="form-group"><label>內容分類</label>
+                <select value={wishForm.genre} onChange={e=>setWishForm(f=>({...f,genre:e.target.value}))}>
+                  {BOOK_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+            </div>
             <div className="modal-actions">
               <button className="btn btn-soft" onClick={()=>setShowWish(false)}>取消</button>
               <button className="btn btn-primary" onClick={addWish}>新增</button>
