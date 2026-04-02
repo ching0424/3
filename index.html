@@ -1496,7 +1496,7 @@ function MovieModal({ movie, onClose, onSave }) {
 
 function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   const confirmDel = useConfirm();
-  const [tab, setTab] = useState("done"); // "done" = 我的片單, "wish" = 願望清單
+  const [tab, setTab] = useState("done");
   const [showModal, setShowModal] = useState(false);
   const [editMovie, setEditMovie] = useState(null);
   
@@ -1505,9 +1505,11 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   const [detail, setDetail] = useState(null);
   const [wishSearching, setWishSearching] = useState(false);
   const [wishPoster, setWishPoster] = useState("");
+  
+  // 🌟 已修正：改用 useRef 避免 API 瘋狂呼叫
   const wishTimer = useRef(null);
 
-  // 🌟 篩選器的狀態
+  // 篩選器的狀態
   const [filterType, setFilterType] = useState("all");
   const [filterGenre, setFilterGenre] = useState("all");
   const [filterRating, setFilterRating] = useState("all");
@@ -1523,9 +1525,8 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
     const val = e.target.value;
     setWishForm(f=>({...f,title:val}));
     
-    // 🌟 使用 .current 來讀取和寫入保險箱
+    // 🌟 已修正：使用 current
     if (wishTimer.current) clearTimeout(wishTimer.current);
-    
     if (val.length < 2) return;
     
     wishTimer.current = setTimeout(async()=>{
@@ -1536,7 +1537,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
     }, 800);
   };
 
-  // 🌟 根據篩選器過濾電影
+  // 根據篩選器過濾電影
   const filteredMovies = movies.filter(m => {
     if (filterType !== "all" && m.type !== filterType && (m.type || "movie") !== filterType) return false;
     if (filterGenre !== "all" && m.genre !== filterGenre && (m.genre || "其他") !== filterGenre) return false;
@@ -1552,7 +1553,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
     .sort((a,b) => (b.watchedAt || "").localeCompare(a.watchedAt || ""))
     .slice(0, 10);
 
-  // 願望清單也支援大分類跟標籤過濾 (不支援評分)
+  // 願望清單過濾
   const filteredWishlist = mwishlist.filter(w => {
     if (filterType !== "all" && w.type !== filterType && (w.type || "movie") !== filterType) return false;
     if (filterGenre !== "all" && w.genre !== filterGenre && (w.genre || "其他") !== filterGenre) return false;
@@ -1561,24 +1562,13 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
 
   return (
     <div className="page">
-      {/* 注入橫向捲動的 CSS */}
-     <style>{`
+      {/* 注入橫向捲動的 CSS，已包含瘦身修正 */}
+      <style>{`
         .media-scroller { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
         .media-scroller::-webkit-scrollbar { height: 6px; }
         .media-scroller::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-        
-        /* 🌟 關鍵修復：強制設定卡片的寬度，並鎖死海報高度，讓它跟下方網格一樣精緻小巧 */
-        .media-scroller .book-card { 
-          width: 110px; 
-          min-width: 110px; 
-          flex-shrink: 0; 
-          scroll-snap-align: start; 
-        }
-        .media-scroller .book-cover, .media-scroller .book-cover-placeholder { 
-          height: 160px !important; 
-          width: 100%; 
-          object-fit: cover; 
-        }
+        .media-scroller .book-card { width: 110px; min-width: 110px; flex-shrink: 0; scroll-snap-align: start; }
+        .media-scroller .book-cover, .media-scroller .book-cover-placeholder { height: 160px !important; width: 100%; object-fit: cover; }
       `}</style>
 
       <div className="page-title" style={{position:"relative"}}>🍿 影劇清單</div>
@@ -1588,7 +1578,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
         <button className={`tab-pill${tab==="wish"?" active":""}`} onClick={()=>setTab("wish")}>願望清單</button>
       </div>
 
-      {/* 🌟 篩選器選單 */}
+      {/* 篩選器選單 */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, padding: "12px", background: "var(--soft)", borderRadius: "14px", border: "1px solid var(--card-border)" }}>
         <select style={{flex: 1, minWidth: "100px", padding: "6px 10px", fontSize: 13}} value={filterType} onChange={e=>setFilterType(e.target.value)}>
           <option value="all">🎬 所有種類</option><option value="movie">電影</option><option value="tv">戲劇</option>
@@ -1603,12 +1593,12 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
         )}
       </div>
 
-      {tab==="done"&&(
+      {tab === "done" && (
         <>
           <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>{setEditMovie(null);setShowModal(true)}}>＋ 記錄影劇</button>
           {filteredMovies.length===0 && <div className="empty">沒有符合篩選的影劇喔！</div>}
 
-          {/* 🌟 繼續觀看 (橫向捲動) */}
+          {/* 繼續觀看 (橫向捲動) */}
           {watchingNow.length > 0 && (
             <div style={{marginBottom: 24}}>
               <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8}}>
@@ -1631,7 +1621,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
             </div>
           )}
 
-          {/* 🌟 近期看完 (橫向捲動) */}
+          {/* 近期看完 (橫向捲動) */}
           {recentlyDone.length > 0 && (
             <div style={{marginBottom: 24}}>
               <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12}}>
@@ -1645,7 +1635,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                       <div className="book-title-text">{m.title}</div>
                       <Stars n={m.rating}/>
                       
-                      {/* 🌟 調整排版：時間獨立一行，標籤放最底下 */}
+                      {/* 🌟 已修正為完美排版：時間獨立一行，標籤放最底下 */}
                       <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
                          {m.watchedAt && (
                            <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>
@@ -1665,7 +1655,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
             </div>
           )}
           
-          {/* 所有作品 Grid (讓他們也能看到 10 部以外的舊電影) */}
+          {/* 所有作品 Grid */}
           {filteredMovies.length > 0 && (
             <div>
               <hr className="divider" />
@@ -1678,7 +1668,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                       <div className="book-title-text">{m.title}</div>
                       <Stars n={m.rating}/>
 
-                      {/* 🌟 這裡也套用相同的排版邏輯 */}
+                      {/* 🌟 同步修正為完美排版 */}
                       <div style={{display: "flex", flexDirection: "column", gap: 4, marginTop: 4}}>
                          {m.watchedAt && (
                            <div style={{fontSize: 10, color: "var(--muted)", textAlign: "left"}}>
@@ -1697,9 +1687,11 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
               </div>
             </div>
           )}
+        </>
+      )}
 
       {/* 願望清單 Tab */}
-      {tab==="wish"&&(
+      {tab === "wish" && (
         <>
           <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>setShowWish(true)}>＋ 加入願望清單</button>
           {filteredWishlist.length===0&&<div className="empty">🌟 沒有符合篩選的願望喔！</div>}
