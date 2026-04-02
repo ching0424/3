@@ -1382,27 +1382,34 @@ function MemoryPage({ notes, setNotes }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MOVIES PAGE
+// MEDIA PAGE (電影與戲劇清單)
 // ═══════════════════════════════════════════════════════════════════════════
-async function searchMoviePoster(title) {
+const GENRES = ["喜劇", "恐怖", "懸疑", "奇幻", "科幻", "動作", "動畫", "其他"];
+
+async function searchMediaPoster(title, type = "movie") {
   try {
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=4f4f7f4d20ddfbe0561a4f413f4c6b2e&query=${encodeURIComponent(title)}&language=zh-TW`);
+    // 根據選擇的是電影(movie)還是戲劇(tv)來切換 API 端點
+    const endpoint = type === "tv" ? "search/tv" : "search/movie";
+    const res = await fetch(`https://api.themoviedb.org/3/${endpoint}?api_key=4f4f7f4d20ddfbe0561a4f413f4c6b2e&query=${encodeURIComponent(title)}&language=zh-TW`);
     const data = await res.json();
+    
     if (!data.results?.length) {
-      // fallback: English search
-      const res2 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=4f4f7f4d20ddfbe0561a4f413f4c6b2e&query=${encodeURIComponent(title)}`);
+      // 如果中文找不到，退回英文搜尋
+      const res2 = await fetch(`https://api.themoviedb.org/3/${endpoint}?api_key=4f4f7f4d20ddfbe0561a4f413f4c6b2e&query=${encodeURIComponent(title)}`);
       const data2 = await res2.json();
       if (!data2.results?.length) return null;
       const m = data2.results[0];
-      return { title: m.title, poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : "" };
+      // 影集的名稱欄位叫 name，電影叫 title，所以用 m.title || m.name
+      return { title: m.title || m.name, poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : "" };
     }
     const m = data.results[0];
-    return { title: m.title, poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : "" };
+    return { title: m.title || m.name, poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : "" };
   } catch { return null; }
 }
 
 function MovieModal({ movie, onClose, onSave }) {
-  const [form, setForm] = useState(movie || { title:"", who:"both", status:"done", watchedAt:"", review:"", rating:0, posterUrl:"" });
+  // 新增了 type (movie/tv) 和 genre (內容類型) 的預設值
+  const [form, setForm] = useState(movie || { title:"", type:"movie", genre:"其他", who:"both", status:"done", watchedAt:"", review:"", rating:0, posterUrl:"" });
   const [searching, setSearching] = useState(false);
   const [posterPreview, setPosterPreview] = useState(movie?.posterUrl||"");
   const timerRef = useState(null);
@@ -1414,7 +1421,8 @@ function MovieModal({ movie, onClose, onSave }) {
     if (val.length < 2) return;
     timerRef[0] = setTimeout(async () => {
       setSearching(true);
-      const result = await searchMoviePoster(val);
+      // 搜尋時傳入當前選擇的 type (電影或戲劇)
+      const result = await searchMediaPoster(val, form.type);
       setSearching(false);
       if (result?.poster) setPosterPreview(result.poster);
     }, 800);
@@ -1425,7 +1433,7 @@ function MovieModal({ movie, onClose, onSave }) {
   return (
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-title">{movie?"編輯電影":"新增電影"}</div>
+        <div className="modal-title">{movie?"編輯影劇":"新增影劇"}</div>
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           <div style={{flexShrink:0,textAlign:"center"}}>
             <div style={{width:90,height:130,borderRadius:10,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
@@ -1437,30 +1445,46 @@ function MovieModal({ movie, onClose, onSave }) {
             {posterPreview&&<div style={{fontSize:10,color:"#52b788",marginTop:4}}>✓ 自動取得</div>}
           </div>
           <div style={{flex:1}}>
-            <label>電影名稱（輸入後自動搜尋）</label>
-            <input value={form.title} onChange={handleTitleChange} placeholder="輸入電影名稱…"/>
+            <label>名稱（輸入後自動搜尋海報）</label>
+            <input value={form.title} onChange={handleTitleChange} placeholder="輸入名稱…"/>
             {searching&&<div style={{fontSize:12,color:"var(--primary)",marginTop:4}}>🔍 搜尋海報中…</div>}
-            <label>海報網址（可手動貼上覆蓋）</label>
-            <input value={posterPreview} onChange={e=>setPosterPreview(e.target.value)} placeholder="https://... 貼上圖片網址"/>
+            <label>海報網址（可手動貼上）</label>
+            <input value={posterPreview} onChange={e=>setPosterPreview(e.target.value)} placeholder="https://..."/>
           </div>
         </div>
+        
+        {/* 🌟 新增的分類標籤區塊 */}
         <div className="form-row" style={{marginTop:12}}>
+          <div className="form-group"><label>種類</label>
+            <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+              <option value="movie">🎬 電影</option><option value="tv">📺 戲劇</option>
+            </select>
+          </div>
+          <div className="form-group"><label>內容標籤</label>
+            <select value={form.genre} onChange={e=>setForm(f=>({...f,genre:e.target.value}))}>
+              {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-row" style={{marginTop:8}}>
+          <div className="form-group"><label>觀看狀態</label>
+            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+              <option value="done">已看完</option><option value="watching">看到一半 (繼續觀看)</option>
+            </select>
+          </div>
           <div className="form-group"><label>誰看的</label>
             <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
               <option value="her">7ing</option><option value="him">KM</option><option value="both">一起</option>
             </select>
           </div>
-          <div className="form-group"><label>狀態</label>
-            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
-              <option value="done">已看完</option><option value="watching">看到一半</option>
-            </select>
-          </div>
         </div>
+
         {(form.status==="done"||form.status==="watching")&&<><label>觀看日期</label><input type="date" value={form.watchedAt} onChange={e=>setForm(f=>({...f,watchedAt:e.target.value}))}/></>}
         <label>評分</label>
         <Stars n={form.rating} onChange={r=>setForm(f=>({...f,rating:r}))}/>
         <label>心得（可選）</label>
-        <textarea value={form.review} onChange={e=>setForm(f=>({...f,review:e.target.value}))} placeholder="這部電影如何？"/>
+        <textarea value={form.review} onChange={e=>setForm(f=>({...f,review:e.target.value}))} placeholder="這部作品如何？"/>
         <div className="modal-actions">
           <button className="btn btn-soft" onClick={onClose}>取消</button>
           <button className="btn btn-primary" onClick={save}>儲存</button>
@@ -1472,19 +1496,25 @@ function MovieModal({ movie, onClose, onSave }) {
 
 function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
   const confirmDel = useConfirm();
-  const [tab, setTab] = useState("done");
+  const [tab, setTab] = useState("done"); // "done" = 我的片單, "wish" = 願望清單
   const [showModal, setShowModal] = useState(false);
   const [editMovie, setEditMovie] = useState(null);
+  
   const [showWish, setShowWish] = useState(false);
-  const [wishForm, setWishForm] = useState({ title:"", who:"both", posterUrl:"" });
+  const [wishForm, setWishForm] = useState({ title:"", type:"movie", genre:"其他", who:"both", posterUrl:"" });
   const [detail, setDetail] = useState(null);
   const [wishSearching, setWishSearching] = useState(false);
   const [wishPoster, setWishPoster] = useState("");
   const wishTimer = useState(null);
 
+  // 🌟 篩選器的狀態
+  const [filterType, setFilterType] = useState("all");
+  const [filterGenre, setFilterGenre] = useState("all");
+  const [filterRating, setFilterRating] = useState("all");
+
   const saveMovie = m => { setMovies(p=>editMovie?p.map(x=>x.id===m.id?m:x):[...p,m]); setShowModal(false); setEditMovie(null); };
   const delMovie = id => { setMovies(p=>p.filter(m=>m.id!==id)); setDetail(null); };
-  const addWish = () => { if(!wishForm.title) return; setMwishlist(p=>[...p,{...wishForm,id:uid(),posterUrl:wishPoster}]); setShowWish(false); setWishForm({title:"",who:"both",posterUrl:""}); setWishPoster(""); };
+  const addWish = () => { if(!wishForm.title) return; setMwishlist(p=>[...p,{...wishForm,id:uid(),posterUrl:wishPoster}]); setShowWish(false); setWishForm({title:"",type:"movie",genre:"其他",who:"both",posterUrl:""}); setWishPoster(""); };
   const delWish = id => setMwishlist(p=>p.filter(w=>w.id!==id));
   const moveToWatched = w => { setMovies(p=>[...p,{...w,id:uid(),status:"done",watchedAt:"",review:"",rating:0}]); setMwishlist(p=>p.filter(x=>x.id!==w.id)); };
   const whoLabel = w=>w==="her"?"7ing":w==="him"?"KM":"一起";
@@ -1496,57 +1526,155 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
     if (val.length < 2) return;
     wishTimer[0] = setTimeout(async()=>{
       setWishSearching(true);
-      const r = await searchMoviePoster(val);
+      const r = await searchMediaPoster(val, wishForm.type);
       setWishSearching(false);
       if(r?.poster) setWishPoster(r.poster);
     }, 800);
   };
 
+  // 🌟 根據篩選器過濾電影
+  const filteredMovies = movies.filter(m => {
+    if (filterType !== "all" && m.type !== filterType && (m.type || "movie") !== filterType) return false;
+    if (filterGenre !== "all" && m.genre !== filterGenre && (m.genre || "其他") !== filterGenre) return false;
+    if (filterRating === "awesome" && m.rating < 4) return false;
+    if (filterRating === "okay" && m.rating >= 4) return false;
+    return true;
+  });
+
+  // 分出「看到一半」與「近期看完 (取前10)」
+  const watchingNow = filteredMovies.filter(m => m.status === "watching");
+  const recentlyDone = filteredMovies
+    .filter(m => m.status === "done")
+    .sort((a,b) => (b.watchedAt || "").localeCompare(a.watchedAt || ""))
+    .slice(0, 10);
+
+  // 願望清單也支援大分類跟標籤過濾 (不支援評分)
+  const filteredWishlist = mwishlist.filter(w => {
+    if (filterType !== "all" && w.type !== filterType && (w.type || "movie") !== filterType) return false;
+    if (filterGenre !== "all" && w.genre !== filterGenre && (w.genre || "其他") !== filterGenre) return false;
+    return true;
+  });
+
   return (
     <div className="page">
-      <div className="page-title" style={{position:"relative"}}>🎬 電影清單</div>
-      <div className="tab-row">
-        <button className={`tab-pill${tab==="done"?" active":""}`} onClick={()=>setTab("done")}>已看完</button>
+      {/* 注入橫向捲動的 CSS */}
+      <style>{`
+        .media-scroller { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
+        .media-scroller::-webkit-scrollbar { height: 6px; }
+        .media-scroller::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+        .media-scroller .book-card { min-width: 130px; flex-shrink: 0; scroll-snap-align: start; }
+      `}</style>
+
+      <div className="page-title" style={{position:"relative"}}>🍿 影劇清單</div>
+      
+      <div className="tab-row" style={{marginBottom: 16}}>
+        <button className={`tab-pill${tab==="done"?" active":""}`} onClick={()=>setTab("done")}>我的片單</button>
         <button className={`tab-pill${tab==="wish"?" active":""}`} onClick={()=>setTab("wish")}>願望清單</button>
+      </div>
+
+      {/* 🌟 篩選器選單 */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, padding: "12px", background: "var(--soft)", borderRadius: "14px", border: "1px solid var(--card-border)" }}>
+        <select style={{flex: 1, minWidth: "100px", padding: "6px 10px", fontSize: 13}} value={filterType} onChange={e=>setFilterType(e.target.value)}>
+          <option value="all">🎬 所有種類</option><option value="movie">電影</option><option value="tv">戲劇</option>
+        </select>
+        <select style={{flex: 1, minWidth: "100px", padding: "6px 10px", fontSize: 13}} value={filterGenre} onChange={e=>setFilterGenre(e.target.value)}>
+          <option value="all">🏷️ 所有類型</option>{GENRES.map(g=><option key={g} value={g}>{g}</option>)}
+        </select>
+        {tab === "done" && (
+          <select style={{flex: 1, minWidth: "120px", padding: "6px 10px", fontSize: 13}} value={filterRating} onChange={e=>setFilterRating(e.target.value)}>
+            <option value="all">⭐ 所有評價</option><option value="awesome">🌟 超讚 (4~5星)</option><option value="okay">💬 還好 (3星以下)</option>
+          </select>
+        )}
       </div>
 
       {tab==="done"&&(
         <>
-          <button className="btn btn-primary" style={{marginBottom:16}} onClick={()=>{setEditMovie(null);setShowModal(true)}}>＋ 新增電影</button>
-          {movies.length===0&&<div className="empty">🎬 記錄你們看過的電影！</div>}
-          <div className="book-grid">
-            {movies.map(m=>(
-              <div key={m.id} className="book-card" onClick={()=>setDetail(m)}>
-                {m.posterUrl
-                  ? <img className="book-cover" src={m.posterUrl} alt={m.title} onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex"}}/>
-                  : null}
-                <div className="book-cover-placeholder" style={{display:m.posterUrl?"none":"flex",background:"linear-gradient(135deg,#2d6a4f,#40916c)"}}>🎬</div>
-                <div className="book-info">
-                  <div className="book-title-text">{m.title}</div>
-                  <Stars n={m.rating}/>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
-                    <span className={`badge badge-${m.who}`} style={{fontSize:10}}>{whoLabel(m.who)}</span>
-                    {m.watchedAt&&<span style={{fontSize:10,color:"var(--muted)"}}>{m.watchedAt}</span>}
-                  </div>
-                </div>
+          <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>{setEditMovie(null);setShowModal(true)}}>＋ 記錄影劇</button>
+          {filteredMovies.length===0 && <div className="empty">沒有符合篩選的影劇喔！</div>}
+
+          {/* 🌟 繼續觀看 (橫向捲動) */}
+          {watchingNow.length > 0 && (
+            <div style={{marginBottom: 24}}>
+              <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8}}>
+                ▶️ 繼續觀看 <span style={{fontSize: 12, background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: 10}}>{watchingNow.length}</span>
               </div>
-            ))}
-          </div>
+              <div className="media-scroller">
+                {watchingNow.map(m=>(
+                  <div key={m.id} className="book-card" onClick={()=>setDetail(m)}>
+                    {m.posterUrl ? <img className="book-cover" src={m.posterUrl} alt={m.title} onError={e=>{e.target.style.display="none"}}/> : <div className="book-cover-placeholder" style={{background:"linear-gradient(135deg,#2d6a4f,#40916c)"}}>🎬</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{m.title}</div>
+                      <div style={{display:"flex", gap:4, marginTop:4}}>
+                        <span className="badge badge-both" style={{fontSize:9}}>{m.type==="tv"?"戲劇":"電影"}</span>
+                        <span className="badge badge-both" style={{fontSize:9, background:"var(--soft)", color:"var(--text)"}}>{m.genre||"其他"}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 🌟 近期看完 (橫向捲動) */}
+          {recentlyDone.length > 0 && (
+            <div style={{marginBottom: 24}}>
+              <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12}}>
+                ✔️ 近期看完
+              </div>
+              <div className="media-scroller">
+                {recentlyDone.map(m=>(
+                  <div key={m.id} className="book-card" onClick={()=>setDetail(m)}>
+                    {m.posterUrl ? <img className="book-cover" src={m.posterUrl} alt={m.title} onError={e=>{e.target.style.display="none"}}/> : <div className="book-cover-placeholder" style={{background:"linear-gradient(135deg,#2d6a4f,#40916c)"}}>🎬</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{m.title}</div>
+                      <Stars n={m.rating}/>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                        <span className={`badge badge-${m.who}`} style={{fontSize:10}}>{whoLabel(m.who)}</span>
+                        {m.watchedAt&&<span style={{fontSize:10,color:"var(--muted)"}}>{m.watchedAt}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 所有作品 Grid (讓他們也能看到 10 部以外的舊電影) */}
+          {filteredMovies.length > 0 && (
+            <div>
+              <hr className="divider" />
+              <div style={{fontSize: 16, fontWeight: 700, color: "var(--muted)", marginBottom: 12}}>所有符合條件的作品 ({filteredMovies.length})</div>
+              <div className="book-grid">
+                {filteredMovies.map(m=>(
+                  <div key={m.id} className="book-card" onClick={()=>setDetail(m)}>
+                    {m.posterUrl ? <img className="book-cover" src={m.posterUrl} alt={m.title} /> : <div className="book-cover-placeholder">🎬</div>}
+                    <div className="book-info">
+                      <div className="book-title-text">{m.title}</div>
+                      <Stars n={m.rating}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
+      {/* 願望清單 Tab */}
       {tab==="wish"&&(
         <>
-          <button className="btn btn-primary" style={{marginBottom:16}} onClick={()=>setShowWish(true)}>＋ 加入想看清單</button>
-          {mwishlist.length===0&&<div className="empty">🌟 加入你們想看的電影！</div>}
+          <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>setShowWish(true)}>＋ 加入願望清單</button>
+          {filteredWishlist.length===0&&<div className="empty">🌟 沒有符合篩選的願望喔！</div>}
           <div className="book-grid">
-            {mwishlist.map(w=>(
+            {filteredWishlist.map(w=>(
               <div key={w.id} className="book-card">
-                {w.posterUrl
-                  ? <img className="book-cover" src={w.posterUrl} alt={w.title}/>
-                  : <div className="book-cover-placeholder" style={{background:"linear-gradient(135deg,#2d6a4f,#40916c)"}}>🎬</div>}
+                {w.posterUrl ? <img className="book-cover" src={w.posterUrl} alt={w.title}/> : <div className="book-cover-placeholder">🎬</div>}
                 <div className="book-info">
                   <div className="book-title-text">{w.title}</div>
+                  <div style={{display:"flex", gap:4, marginTop:4, marginBottom:6}}>
+                    <span className="badge badge-both" style={{fontSize:9}}>{w.type==="tv"?"戲劇":"電影"}</span>
+                    <span className="badge badge-both" style={{fontSize:9, background:"var(--soft)", color:"var(--text)"}}>{w.genre||"其他"}</span>
+                  </div>
                   <span className={`badge badge-${w.who}`} style={{fontSize:10}}>{whoLabel(w.who)}</span>
                   <div style={{display:"flex",gap:4,marginTop:6}}>
                     <button className="btn btn-sm btn-soft" style={{flex:1,fontSize:10}} onClick={()=>moveToWatched(w)}>✓看了</button>
@@ -1559,6 +1687,7 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
         </>
       )}
 
+      {/* 詳細資訊 Modal */}
       {confirmDel.Dialog}
       {detail&&(
         <div className="overlay" onClick={()=>setDetail(null)}>
@@ -1569,14 +1698,19 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
                 : <div style={{width:90,height:130,background:"linear-gradient(135deg,#2d6a4f,#40916c)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>🎬</div>}
               <div>
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
-                <Stars n={detail.rating}/>
-                <span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span>
+                <div style={{display:"flex", gap:6, marginBottom:8}}>
+                  <span className="badge badge-both">{detail.type==="tv"?"戲劇":"電影"}</span>
+                  <span className="badge badge-both" style={{background:"var(--soft)", color:"var(--text)"}}>{detail.genre||"其他"}</span>
+                  {detail.status === "watching" && <span className="badge badge-both" style={{background:"var(--accent)", color:"#fff"}}>觀看中</span>}
+                </div>
+                {detail.status === "done" && <Stars n={detail.rating}/>}
+                <div style={{marginTop: 6}}><span className={`badge badge-${detail.who}`}>{whoLabel(detail.who)}</span></div>
                 {detail.watchedAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>觀看日：{detail.watchedAt}</div>}
               </div>
             </div>
             {detail.review&&<><hr className="divider"/><div style={{fontSize:14,lineHeight:1.8}}>{detail.review}</div></>}
             <div className="modal-actions">
-              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這部電影嗎？")){delMovie(detail.id)}}}>刪除</button>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{if(await confirmDel.ask("確定要刪除這筆紀錄嗎？")){delMovie(detail.id)}}}>刪除</button>
               <button className="btn btn-soft" onClick={()=>{setEditMovie(detail);setDetail(null);setShowModal(true)}}>編輯</button>
               <button className="btn btn-primary" onClick={()=>setDetail(null)}>關閉</button>
             </div>
@@ -1584,20 +1718,34 @@ function MoviesPage({ movies, setMovies, mwishlist, setMwishlist }) {
         </div>
       )}
 
+      {/* 編輯 / 新增 Modal */}
       {showModal&&<MovieModal movie={editMovie} onClose={()=>{setShowModal(false);setEditMovie(null)}} onSave={saveMovie}/>}
 
+      {/* 願望清單 Modal */}
       {showWish&&(
         <div className="overlay" onClick={()=>setShowWish(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">加入想看清單</div>
+            <div className="modal-title">加入願望清單</div>
             <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
               <div style={{width:70,height:100,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {wishPoster?<img src={wishPoster} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:24}}>{wishSearching?"⏳":"🎬"}</span>}
               </div>
               <div style={{flex:1}}>
-                <label>電影名稱</label>
+                <label>名稱</label>
                 <input value={wishForm.title} onChange={handleWishTitle} placeholder="輸入名稱自動搜尋…"/>
                 {wishSearching&&<div style={{fontSize:11,color:"var(--primary)",marginTop:3}}>🔍 搜尋中…</div>}
+              </div>
+            </div>
+            <div className="form-row" style={{marginTop:8}}>
+              <div className="form-group"><label>種類</label>
+                <select value={wishForm.type} onChange={e=>setWishForm(f=>({...f,type:e.target.value}))}>
+                  <option value="movie">🎬 電影</option><option value="tv">📺 戲劇</option>
+                </select>
+              </div>
+              <div className="form-group"><label>內容標籤</label>
+                <select value={wishForm.genre} onChange={e=>setWishForm(f=>({...f,genre:e.target.value}))}>
+                  {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
               </div>
             </div>
             <label>誰想看</label>
