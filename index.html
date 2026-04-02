@@ -2368,8 +2368,7 @@ function App() {
   return (
     <>
       <style>{css}</style>
-      <div className="app" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)}>
+      <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <nav className="nav">
           {/* Hamburger */}
           <button onClick={e=>{e.stopPropagation();setMenuOpen(m=>!m);}} style={{
