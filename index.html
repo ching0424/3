@@ -2368,7 +2368,14 @@ function App() {
   return (
     <>
       <style>{css}</style>
-      <div className="app" onClick={()=>menuOpen&&setMenuOpen(false)} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+      {/* 🌟 把兩個 div 合併成一個！同時擁有滑動和點擊關閉的功能 */}
+      <div 
+        className="app" 
+        onTouchStart={onTouchStart} 
+        onTouchMove={onTouchMove} 
+        onTouchEnd={onTouchEnd}
+        onClick={() => menuOpen && setMenuOpen(false)}
+      >
         <nav className="nav">
           {/* Hamburger */}
           <button onClick={e=>{e.stopPropagation();setMenuOpen(m=>!m);}} style={{
@@ -2426,6 +2433,8 @@ function App() {
           {/* Logo */}
           <div className="nav-logo">7ing<span>♡</span>KM</div>
         </nav>
+
+        {/* 分頁內容 */}
         {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} memos={memos} goalLog={goalLog} mode={mode} lpBg={lpBg} setTab={setTab}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
         {tab==="goals"   && <GoalsPage goals={goals} setGoals={setGoals} goalLog={goalLog} setGoalLog={setGoalLog}/>}
@@ -2434,6 +2443,7 @@ function App() {
         {tab==="food"    && <FoodPage food={food} setFood={setFood}/>}
         {tab==="memo"    && <MemoPage memos={memos} setMemos={setMemos}/>}
         {tab==="memory"  && <MemoryPage notes={notes} setNotes={setNotes}/>}
+        
       </div>
     </>
   );
