@@ -624,17 +624,22 @@ function CalendarPage({ events, setEvents }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // GOALS PAGE
 // ═══════════════════════════════════════════════════════════════════════════
-function GoalCalendar({ goalLog }) {
+function GoalCalendar({ goalLog, goals }) {
+  const [selectedLog, setSelectedLog] = useState(null); // 控制彈出視窗
+
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
 
-  // 將歷史紀錄的日期與當月的每一天配對
+  // 取得今天確切的年月日，用來判斷「哪一格是今天」
+  const tYear = now.getFullYear();
+  const tMonth = now.getMonth();
+  const tDay = now.getDate();
+
   const logMap = {};
   goalLog.forEach(l => {
-    // 自動解析日期，無論您是用哪種格式儲存
     const d = new Date(l.date.replace(/-/g, '/')); 
     if (d.getFullYear() === year && d.getMonth() === month) {
       logMap[d.getDate()] = l;
@@ -649,37 +654,39 @@ function GoalCalendar({ goalLog }) {
       <div className="card-title" style={{ marginBottom: 15 }}>📅 {month + 1}月 打卡月曆</div>
       
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, textAlign: "center", marginBottom: 12 }}>
-        {/* 星期標題 */}
         {["日", "一", "二", "三", "四", "五", "六"].map(day => (
           <div key={day} style={{ fontSize: 13, color: "var(--muted)", fontWeight: "bold" }}>{day}</div>
         ))}
-        
-        {/* 空白格子 (對齊每個月第一天是星期幾) */}
         {blanks.map((_, i) => <div key={`blank-${i}`} />)}
         
-        {/* 渲染日期 */}
         {days.map(d => {
-          const l = logMap[d];
-          const pct = l ? l.pct : undefined;
+          const isToday = (year === tYear && month === tMonth && d === tDay);
+          let l = logMap[d];
+          let pct = l ? l.pct : undefined;
           
-          // 完全沿用您原本的完成度顏色設定
+          // 🌟 如果是「今天」，不需要等半夜結算，直接讀取現有的 goals 即時顯示進度！
+          if (isToday && goals && goals.length > 0) {
+            const liveDone = goals.filter(g => g.done).length;
+            pct = Math.round((liveDone / goals.length) * 100);
+            // 偽造一個今天的 log，讓點擊時可以預覽今天的狀況
+            l = { date: "今天", pct, done: liveDone, total: goals.length, tasks: goals, isLive: true };
+          }
+          
           const bg = l ? (pct === 100 ? "#52b788" : pct >= 70 ? "#74c69d" : pct >= 40 ? "#ffd166" : "#ffb3b3") : "rgba(128,128,128,0.1)";
           const color = l ? (pct === 100 ? "#fff" : "#1b3a2d") : "var(--muted)";
           
           return (
-            <div key={d} title={l ? `達成率: ${pct}%` : "無紀錄"} style={{
-              aspectRatio: "1/1",
-              borderRadius: 10,
-              background: bg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-              fontWeight: 700,
-              color: color,
-              boxShadow: l ? "0 2px 6px #0001" : "none",
-              cursor: l ? "pointer" : "default",
-              transition: "transform 0.2s"
+            <div key={d} 
+              onClick={() => l && setSelectedLog(l)} // 點擊有紀錄的日期，打開回顧視窗
+              title={l ? `達成率: ${pct}% (點擊查看)` : "無紀錄"} 
+              style={{
+                aspectRatio: "1/1", borderRadius: 10, background: bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, fontWeight: 700, color: color,
+                boxShadow: l ? "0 2px 6px #0001" : "none",
+                cursor: l ? "pointer" : "default",
+                transition: "transform 0.2s",
+                border: isToday ? "2px solid var(--primary)" : "none" // 今天加上框線特別標示
             }}
             onMouseEnter={e => e.currentTarget.style.transform = l ? "scale(1.15)" : "none"}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
@@ -690,13 +697,45 @@ function GoalCalendar({ goalLog }) {
         })}
       </div>
       
-      {/* 底部顏色圖例 */}
       <div style={{ fontSize: 12, color: "#52796f", display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-        <span>🟢 100% = 全完成</span>
-        <span>🟡 70-99% = 不錯</span>
-        <span>🟠 40-69% = 普通</span>
-        <span>🔴 0-39% = 加油</span>
+        <span>🟢 100%</span><span>🟡 70-99%</span><span>🟠 40-69%</span><span>🔴 0-39%</span>
       </div>
+
+      {/* 🌟 點擊日期的回顧彈出視窗 */}
+      {selectedLog && (
+        <div className="overlay" onClick={() => setSelectedLog(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth: 340}}>
+            <div className="modal-title" style={{textAlign:"center", marginBottom: 10}}>
+              {selectedLog.isLive ? "🌟 今日即時進度" : `📅 ${selectedLog.date} 回顧`}
+            </div>
+            
+            <div style={{fontSize: 42, fontWeight: 700, textAlign: "center", color: selectedLog.pct === 100 ? "#52b788" : "var(--primary)"}}>
+              {selectedLog.pct}%
+            </div>
+            <div style={{textAlign: "center", color: "var(--muted)", marginBottom: 20, fontSize: 14}}>
+              共完成 {selectedLog.done} / {selectedLog.total} 個目標
+            </div>
+
+            {/* 任務明細列表 */}
+            <div style={{background: "var(--bg)", borderRadius: 12, padding: 16, maxHeight: "40vh", overflowY: "auto"}}>
+              {selectedLog.tasks && selectedLog.tasks.length > 0 ? (
+                selectedLog.tasks.map((t, i) => (
+                  <div key={i} style={{display: "flex", gap: 10, alignItems: "center", marginBottom: i === selectedLog.tasks.length - 1 ? 0 : 12}}>
+                    <span style={{fontSize: 18}}>{t.done ? "✅" : "❌"}</span>
+                    <span style={{fontSize: 15, fontWeight: 600, color: t.done ? "var(--muted)" : "var(--text)", textDecoration: t.done ? "line-through" : "none"}}>
+                      {t.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div style={{textAlign: "center", color: "var(--muted)", fontSize: 13}}>以前的紀錄沒有保存任務明細喔！</div>
+              )}
+            </div>
+
+            <button className="btn btn-primary" onClick={() => setSelectedLog(null)} style={{width: "100%", marginTop: 24}}>關閉</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -828,7 +867,7 @@ function GoalCalendar({ goalLog }) {
       {confirmDel.Dialog}
 
       {/* ── 升級版：當月打卡月曆 ── */}
-      <GoalCalendar goalLog={goalLog} />
+      <GoalCalendar goalLog={goalLog} goals={goals} />
 
       {/* 修改後的 Modal 彈出視窗 */}
       {showModal&&(
@@ -2356,28 +2395,39 @@ function App() {
     }
   };
 
- // Daily goal auto-log & Auto-reset
+// Daily goal auto-log & Auto-reset (升級版：記錄任務明細)
   useEffect(() => {
     if (!isReady || !goals.length) return;
     
-    const todayStr = today();
-    const lastLogDate = goalLog.length ? goalLog[goalLog.length - 1].date : null;
+    const todayStr = today(); // 取得今天的日期字串
     const lastResetDate = localStorage.getItem("lastResetDate");
 
-    // 1. 自動結算昨天成績
-    if (lastLogDate && lastLogDate !== todayStr) {
-      const doneCount = goals.filter(g => g.done).length; // 提取變數，避免重複計算
+    // 如果 lastResetDate 存在，且不是今天，代表跨日了！執行「昨日結算」與「今日重置」
+    if (lastResetDate && lastResetDate !== todayStr) {
+      const doneCount = goals.filter(g => g.done).length;
       const pct = Math.round((doneCount / goals.length) * 100);
-      setGoalLog(p => [...p, { date: lastLogDate, pct, done: doneCount, total: goals.length, id: uid() }]);
-    }
+      
+      // 🌟 將當下的「任務清單與狀態」備份起來
+      const savedTasks = goals.map(g => ({ name: g.name, done: g.done, who: g.who }));
 
-    // 2. 自動重置今天目標
-    if (lastResetDate !== todayStr) {
-      setGoals(p => p.map(g => ({ ...g, done: false }))); // 縮寫箭頭函式，讓程式碼更簡潔
+      // 1. 儲存昨日成績與清單
+      setGoalLog(p => [...p, { 
+        date: lastResetDate, // 結算的是昨天的日期
+        pct, 
+        done: doneCount, 
+        total: goals.length, 
+        tasks: savedTasks, // 新增這行！把任務明細存入歷史
+        id: uid() 
+      }]);
+
+      // 2. 自動重置今天目標的打勾狀態
+      setGoals(p => p.map(g => ({ ...g, done: false })));
+      localStorage.setItem("lastResetDate", todayStr);
+    } else if (!lastResetDate) {
+      // 第一次使用，先記錄今天的日期，明天才能結算
       localStorage.setItem("lastResetDate", todayStr);
     }
   }, [isReady, goals]);
-
   // Subscribe to Firebase (or localStorage) — each fires markLoaded when first data arrives
   useEffect(() => {
     const unsubs = [
