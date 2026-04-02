@@ -1074,7 +1074,6 @@ function BookModal({ book, onClose, onSave }) {
   const [searching, setSearching] = useState(false);
   const [coverPreview, setCoverPreview] = useState(book?.coverUrl||"");
   
-  // 🌟 使用 useRef 避免計時器 bug
   const timerRef = useRef(null);
 
   const handleTitleChange = e => {
@@ -1090,7 +1089,6 @@ function BookModal({ book, onClose, onSave }) {
       setSearching(false);
       if (result) {
         if (result.cover) setCoverPreview(result.cover);
-        // 如果原本沒填作者，自動補上 Google 抓到的作者
         if (!form.author && result.author) {
           setForm(f => ({...f, author: result.author}));
         }
@@ -1106,7 +1104,7 @@ function BookModal({ book, onClose, onSave }) {
         <div className="modal-title">{book?"編輯書籍":"新增書籍"}</div>
         <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
           <div style={{flexShrink:0,textAlign:"center"}}>
-            <div style={{width:90,height:130,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative", boxShadow: "4px 0 8px rgba(0,0,0,0.1)" /* 書本立體陰影 */}}>
+            <div style={{width:90,height:130,borderRadius:8,overflow:"hidden",border:`2px solid ${COLORS.soft}`,background:"var(--soft)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative", boxShadow: "4px 0 8px rgba(0,0,0,0.1)"}}>
               {coverPreview
                 ? <img src={coverPreview} alt="cover" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={()=>setCoverPreview("")}/>
                 : <span style={{fontSize:32}}>{searching?"⏳":"📖"}</span>}
@@ -1128,7 +1126,8 @@ function BookModal({ book, onClose, onSave }) {
         <div className="form-row" style={{marginTop:12}}>
           <div className="form-group"><label>歸屬書櫃</label>
             <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
-              <option value="both">📚 共同書櫃</option><option value="her">👧 7ing 的書櫃</option><option value="him">👦 KM 的書櫃</option>
+              {/* 🌟 更新了專屬 Emoji */}
+              <option value="both">🤝 共同書櫃</option><option value="her">🌻 7ing 的書櫃</option><option value="him">🏐️ KM 的書櫃</option>
             </select>
           </div>
           <div className="form-group"><label>內容分類</label>
@@ -1175,7 +1174,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
   const [wishCover, setWishCover] = useState("");
   const wishTimer = useRef(null);
 
-  // 🌟 書櫃專屬篩選器
   const [filterWho, setFilterWho] = useState("all");
   const [filterGenre, setFilterGenre] = useState("all");
   const [filterRating, setFilterRating] = useState("all");
@@ -1186,7 +1184,8 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
   const delWish = id => setWishlist(p=>p.filter(w=>w.id!==id));
   const moveToRead = w => { setBooks(p=>[...p,{...w,id:uid(),status:"reading",readAt:"",review:"",rating:0}]); setWishlist(p=>p.filter(x=>x.id!==w.id)); };
   
-  const whoBookLabel = w=>w==="her"?"7ing":w==="him"?"KM":"共同";
+  // 🌟 更新了小標籤的 Emoji 顯示方式
+  const whoBookLabel = w=>w==="her"?"🌻 7ing":w==="him"?"🏐️ KM":"🤝 共同";
 
   const handleWishTitle = async e => {
     const val = e.target.value;
@@ -1205,7 +1204,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
     }, 800);
   };
 
-  // 過濾書籍
   const filteredBooks = books.filter(b => {
     if (filterWho !== "all" && b.who !== filterWho && (b.who || "both") !== filterWho) return false;
     if (filterGenre !== "all" && b.genre !== filterGenre && (b.genre || "其他") !== filterGenre) return false;
@@ -1228,7 +1226,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
 
   return (
     <div className="page">
-      {/* 書籍特有的橫向捲動 CSS (帶有書本立體感) */}
       <style>{`
         .media-scroller { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; padding-top: 4px; scroll-snap-type: x mandatory; margin-bottom: 10px; }
         .media-scroller::-webkit-scrollbar { height: 6px; }
@@ -1236,10 +1233,9 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         .media-scroller .book-card { width: 110px; min-width: 110px; flex-shrink: 0; scroll-snap-align: start; }
         .media-scroller .book-cover, .media-scroller .book-cover-placeholder { 
           height: 160px !important; width: 100%; object-fit: cover; 
-          border-radius: 4px 8px 8px 4px; /* 書本造型邊角 */
-          box-shadow: inset 4px 0 10px rgba(0,0,0,0.1); /* 書脊陰影 */
+          border-radius: 4px 8px 8px 4px; 
+          box-shadow: inset 4px 0 10px rgba(0,0,0,0.1); 
         }
-        /* 閱讀中的專屬書籤動畫 */
         .bookmark-tag {
           position: absolute; top: -4px; right: 12px; background: var(--accent); color: white;
           padding: 4px 6px; font-size: 10px; font-weight: bold; border-radius: 0 0 4px 4px;
@@ -1254,10 +1250,10 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         <button className={`tab-pill${tab==="wish"?" active":""}`} onClick={()=>setTab("wish")}>購書/借書清單</button>
       </div>
 
-      {/* 🌟 專屬篩選器 */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24, padding: "12px", background: "var(--soft)", borderRadius: "14px", border: "1px solid var(--card-border)" }}>
         <select style={{flex: 1, minWidth: "110px", padding: "6px 10px", fontSize: 13}} value={filterWho} onChange={e=>setFilterWho(e.target.value)}>
-          <option value="all">📚 所有書櫃</option><option value="both">🤝 共同書櫃</option><option value="her">👧 7ing 的</option><option value="him">👦 KM 的</option>
+          {/* 🌟 篩選器也換上新 Emoji */}
+          <option value="all">📚 所有書櫃</option><option value="both">🤝 共同書櫃</option><option value="her">🌻 7ing 的</option><option value="him">🏐️ KM 的</option>
         </select>
         <select style={{flex: 1, minWidth: "100px", padding: "6px 10px", fontSize: 13}} value={filterGenre} onChange={e=>setFilterGenre(e.target.value)}>
           <option value="all">🏷️ 所有類型</option>{BOOK_GENRES.map(g=><option key={g} value={g}>{g}</option>)}
@@ -1274,7 +1270,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
           <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>{setEditBook(null);setShowModal(true)}}>＋ 收藏新書</button>
           {filteredBooks.length===0 && <div className="empty">書櫃空空的，快去新增書籍吧！</div>}
 
-          {/* 📖 正在閱讀 (橫向捲動) */}
           {readingNow.length > 0 && (
             <div style={{marginBottom: 24}}>
               <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8}}>
@@ -1299,7 +1294,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             </div>
           )}
 
-          {/* ✔️ 近期讀完 (橫向捲動) */}
           {recentlyDone.length > 0 && (
             <div style={{marginBottom: 24}}>
               <div style={{fontSize: 18, fontWeight: 700, color: "var(--secondary)", marginBottom: 12}}>
@@ -1327,7 +1321,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             </div>
           )}
           
-          {/* 所有書籍 Grid */}
           {filteredBooks.length > 0 && (
             <div>
               <hr className="divider" />
@@ -1355,7 +1348,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         </>
       )}
 
-      {/* 購書清單 Tab */}
       {tab === "wish" && (
         <>
           <button className="btn btn-primary" style={{marginBottom:20}} onClick={()=>setShowWish(true)}>＋ 加入想看書單</button>
@@ -1382,7 +1374,6 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         </>
       )}
 
-      {/* 詳細資訊 Modal */}
       {confirmDel.Dialog}
       {detail&&(
         <div className="overlay" onClick={()=>setDetail(null)}>
@@ -1395,12 +1386,20 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
                 <div className="modal-title" style={{marginBottom:4}}>{detail.title}</div>
                 <div style={{fontSize: 14, color: "var(--muted)", marginBottom: 8}}>{detail.author || "未知作者"}</div>
                 
-                <div style={{display:"flex", gap:6, marginBottom:8}}>
-                  <span className={`badge badge-${detail.who}`}>{whoBookLabel(detail.who)}的</span>
-                  <span className="badge badge-both" style={{background:"var(--soft)", color:"var(--text)"}}>{detail.genre||"其他"}</span>
-                  {detail.status === "reading" && <span className="badge badge-both" style={{background:"var(--accent)", color:"#fff"}}>🔖 閱讀中</span>}
+                {/* 🌟 修正彈出視窗排版：拆成兩行顯示，不擁擠 */}
+                <div style={{display:"flex", flexDirection: "column", gap: 6, marginBottom: 8}}>
+                  <div style={{display:"flex", gap: 6, flexWrap: "wrap"}}>
+                    <span className={`badge badge-${detail.who}`}>{whoBookLabel(detail.who)}的</span>
+                    <span className="badge badge-both" style={{background:"var(--soft)", color:"var(--text)"}}>{detail.genre||"其他"}</span>
+                  </div>
+                  {detail.status === "reading" && (
+                    <div>
+                      <span className="badge badge-both" style={{background:"var(--accent)", color:"#fff"}}>🔖 閱讀中</span>
+                    </div>
+                  )}
+                  {detail.status === "done" && <div><Stars n={detail.rating}/></div>}
                 </div>
-                {detail.status === "done" && <Stars n={detail.rating}/>}
+
                 {detail.readAt&&<div style={{fontSize:13,color:"var(--muted)",marginTop:6}}>{detail.status==="done"?"完讀日：":"開讀日："}{detail.readAt}</div>}
               </div>
             </div>
@@ -1414,10 +1413,8 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
         </div>
       )}
 
-      {/* 編輯 Modal */}
       {showModal&&<BookModal book={editBook} onClose={()=>{setShowModal(false);setEditBook(null)}} onSave={saveBook}/>}
 
-      {/* 購書清單 Modal */}
       {showWish&&(
         <div className="overlay" onClick={()=>setShowWish(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
@@ -1437,7 +1434,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             <div className="form-row" style={{marginTop:12}}>
               <div className="form-group"><label>歸屬書櫃</label>
                 <select value={wishForm.who} onChange={e=>setWishForm(f=>({...f,who:e.target.value}))}>
-                  <option value="both">📚 共同書櫃</option><option value="her">👧 7ing 的書櫃</option><option value="him">👦 KM 的書櫃</option>
+                  <option value="both">🤝 共同書櫃</option><option value="her">🌻 7ing 的書櫃</option><option value="him">🏐️ KM 的書櫃</option>
                 </select>
               </div>
               <div className="form-group"><label>內容分類</label>
