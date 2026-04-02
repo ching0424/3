@@ -1127,7 +1127,7 @@ function BookModal({ book, onClose, onSave }) {
           <div className="form-group"><label>歸屬書櫃</label>
             <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
               {/* 🌟 更新了專屬 Emoji */}
-              <option value="both">🤝 共同書櫃</option><option value="her">🌻 7ing 的書櫃</option><option value="him">🏐️ KM 的書櫃</option>
+              <option value="both">🤝 共同書櫃</option><option value="her">7ing 的書櫃</option><option value="him">KM 的書櫃</option>
             </select>
           </div>
           <div className="form-group"><label>內容分類</label>
@@ -1185,7 +1185,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
   const moveToRead = w => { setBooks(p=>[...p,{...w,id:uid(),status:"reading",readAt:"",review:"",rating:0}]); setWishlist(p=>p.filter(x=>x.id!==w.id)); };
   
   // 🌟 更新了小標籤的 Emoji 顯示方式
-  const whoBookLabel = w=>w==="her"?"🌻 7ing":w==="him"?"🏐️ KM":"🤝 共同";
+  const whoBookLabel = w=>w==="her"?"7ing":w==="him"?"KM":"共同";
 
   const handleWishTitle = async e => {
     const val = e.target.value;
@@ -1434,7 +1434,7 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
             <div className="form-row" style={{marginTop:12}}>
               <div className="form-group"><label>歸屬書櫃</label>
                 <select value={wishForm.who} onChange={e=>setWishForm(f=>({...f,who:e.target.value}))}>
-                  <option value="both">🤝 共同書櫃</option><option value="her">🌻 7ing 的書櫃</option><option value="him">🏐️ KM 的書櫃</option>
+                  <option value="both">🤝 共同書櫃</option><option value="her">7ing 的書櫃</option><option value="him">KM 的書櫃</option>
                 </select>
               </div>
               <div className="form-group"><label>內容分類</label>
