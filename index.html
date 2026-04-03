@@ -108,7 +108,7 @@ const KEYS = {
   events:"couple/events", goals:"couple/goals", goalLog:"couple/goalLog",
   books:"couple/books", wishlist:"couple/wishlist", notes:"couple/notes",
   movies:"couple/movies", mwishlist:"couple/mwishlist",
-  memos:"couple/memos", food:"couple/food",
+  memos:"couple/memos", food:"couple/food", periods:"couple/periods"
 };
 let _db=null;
 function getDB(){
@@ -1453,6 +1453,183 @@ function ReadingPage({ books, setBooks, wishlist, setWishlist }) {
     </div>
   );
 }
+// ═══════════════════════════════════════════════════════════════════════════
+// PERIOD PAGE (專屬小精靈 - 月經記錄)
+// ═══════════════════════════════════════════════════════════════════════════
+const SYMPTOMS = ["🩸 量多", "🤕 頭痛", "💢 腹部悶痛", "🧊 畏寒", "🥺 情緒起伏", "💤 疲倦", "🍫 嘴饞", "💥 腰酸", "✨ 狀態極佳"];
+
+function PeriodPage({ periods, setPeriods }) {
+  const [showModal, setShowModal] = useState(false);
+  const [editRecord, setEditRecord] = useState(null);
+  const confirmDel = useConfirm();
+
+  const [form, setForm] = useState({ startDate: today(), endDate: "", symptoms: [], note: "" });
+
+  // 排序記錄 (最新的在前面)
+  const sortedPeriods = [...periods].sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const latestPeriod = sortedPeriods[0];
+
+  // 週期計算邏輯 (預設 30 天)
+  const CYCLE_DAYS = 30;
+  let daysSinceLast = 0;
+  let nextExpected = "";
+  let daysLeft = 0;
+  let isActive = false;
+
+  if (latestPeriod) {
+    const start = new Date(latestPeriod.startDate.replace(/-/g, '/'));
+    const now = new Date();
+    // 計算距離上次來過了幾天
+    daysSinceLast = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    
+    // 如果沒有結束日期，代表正在經期中
+    isActive = !latestPeriod.endDate;
+
+    // 預計下次來的日期
+    const nextDate = new Date(start);
+    nextDate.setDate(nextDate.getDate() + CYCLE_DAYS);
+    nextExpected = nextDate.toLocaleDateString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\//g, '-');
+    
+    daysLeft = CYCLE_DAYS - daysSinceLast;
+  }
+
+  // 圓環進度計算 (0 ~ 100%)
+  const progressPct = latestPeriod ? Math.min(Math.max((daysSinceLast / CYCLE_DAYS) * 100, 0), 100) : 0;
+  const strokeDasharray = 251.2; // 2 * pi * r (r=40)
+  const strokeDashoffset = strokeDasharray - (strokeDasharray * progressPct) / 100;
+
+  const toggleSymptom = (sym) => {
+    setForm(f => ({
+      ...f,
+      symptoms: f.symptoms.includes(sym) ? f.symptoms.filter(s => s !== sym) : [...f.symptoms, sym]
+    }));
+  };
+
+  const save = () => {
+    if (!form.startDate) return;
+    setPeriods(p => editRecord ? p.map(x => x.id === editRecord.id ? { ...form, id: editRecord.id } : x) : [...p, { ...form, id: uid() }]);
+    setShowModal(false);
+  };
+
+  const openEdit = (record) => {
+    setEditRecord(record);
+    setForm(record);
+    setShowModal(true);
+  };
+
+  const openNew = () => {
+    setEditRecord(null);
+    setForm({ startDate: today(), endDate: "", symptoms: [], note: "" });
+    setShowModal(true);
+  };
+
+  return (
+    <div className="page">
+      <div className="page-title">🌸 7ing 專屬呵護</div>
+
+      {/* 🌟 環狀週期儀表板 */}
+      <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "30px 20px" }}>
+        <div style={{ position: "relative", width: 180, height: 180 }}>
+          <svg viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
+            {/* 背景軌道 */}
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--soft)" strokeWidth="8" />
+            {/* 進度條 */}
+            <circle cx="50" cy="50" r="40" fill="none" stroke={isActive ? "#ff4d6d" : "#ffb3c6"} strokeWidth="8" strokeLinecap="round" 
+              strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset} 
+              style={{ transition: "stroke-dashoffset 1s ease-in-out" }} />
+          </svg>
+          {/* 圓環中心文字 */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            {latestPeriod ? (
+              isActive ? (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>經期第</div>
+                  <div style={{ fontSize: 42, fontWeight: 800, color: "#ff4d6d", lineHeight: 1.1 }}>{daysSinceLast + 1}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>天</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>距離下次預計</div>
+                  <div style={{ fontSize: 42, fontWeight: 800, color: "#ff8fab", lineHeight: 1.1 }}>{daysLeft > 0 ? daysLeft : 0}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>天</div>
+                </>
+              )
+            ) : (
+              <div style={{ fontSize: 14, color: "var(--muted)" }}>尚未有紀錄</div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24, textAlign: "center" }}>
+          {latestPeriod && !isActive && <div style={{ fontSize: 13, color: "var(--muted)" }}>預計下次來潮：{nextExpected}</div>}
+          <button className="btn btn-primary" style={{ marginTop: 16, background: isActive ? "#ff4d6d" : "#ffb3c6", border: "none", color: isActive ? "#fff" : "#800f2f" }} onClick={openNew}>
+            {isActive ? "結束經期 / 記錄症狀" : "🩸 記錄經期開始"}
+          </button>
+        </div>
+      </div>
+
+      {/* 歷史紀錄 */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--muted)", marginBottom: 12 }}>歷史紀錄</div>
+        {sortedPeriods.length === 0 ? <div className="empty">目前還沒有紀錄喔！</div> : 
+          sortedPeriods.map(p => (
+            <div key={p.id} className="card" onClick={() => openEdit(p)} style={{ cursor: "pointer", borderLeft: "4px solid #ffb3c6" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+                  {p.startDate} ~ {p.endDate || "至今"}
+                </div>
+                {!p.endDate && <span className="badge" style={{ background: "#ff4d6d", color: "white" }}>進行中</span>}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: p.note ? 8 : 0 }}>
+                {p.symptoms.map(s => <span key={s} className="badge" style={{ background: "var(--soft)", color: "var(--secondary)" }}>{s}</span>)}
+              </div>
+              {p.note && <div style={{ fontSize: 13, color: "var(--muted)" }}>{p.note}</div>}
+            </div>
+          ))
+        }
+      </div>
+
+      {confirmDel.Dialog}
+      {showModal && (
+        <div className="overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{editRecord ? "編輯紀錄" : "新增紀錄"}</div>
+            
+            <div className="form-row">
+              <div className="form-group"><label>開始日期</label><input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
+              <div className="form-group"><label>結束日期 (可先留空)</label><input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} /></div>
+            </div>
+
+            <label style={{ marginTop: 12 }}>伴隨症狀 (多選)</label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {SYMPTOMS.map(sym => {
+                const selected = form.symptoms.includes(sym);
+                return (
+                  <button key={sym} onClick={() => toggleSymptom(sym)} style={{
+                    padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", transition: "all 0.2s",
+                    background: selected ? "#ff8fab" : "var(--soft)", color: selected ? "#fff" : "var(--secondary)"
+                  }}>
+                    {sym}
+                  </button>
+                );
+              })}
+            </div>
+
+            <label>貼心備註 (想吃什麼、心情如何)</label>
+            <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="例如：特別想吃巧克力、買熱水袋..." />
+
+            <div className="modal-actions">
+              {editRecord && <button className="btn btn-danger btn-sm" onClick={async () => { if (await confirmDel.ask("確定要刪除這筆紀錄嗎？")) { setPeriods(p => p.filter(x => x.id !== editRecord.id)); setShowModal(false); } }}>刪除</button>}
+              <div style={{ flex: 1 }} />
+              <button className="btn btn-soft" onClick={() => setShowModal(false)}>取消</button>
+              <button className="btn btn-primary" onClick={save}>儲存</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MEMORY PAGE (Bonus)
@@ -2353,13 +2530,51 @@ function LoginScreen({ onAuth, mode, lpBg }) {
 // HOME / DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 // 🌟 記得在括號裡加上 setTab 跟 memos
-function HomePage({ events, goals, books, notes, memos, goalLog, mode, lpBg, setTab }) {
+function HomePage({ events, goals, books, notes, memos, periods, goalLog, mode, lpBg, setTab }) {
   const todayStr = today();
   const todayEvs = events.filter(e=>e.date===todayStr);
   const upcomingEvs = events.filter(e=>e.date>todayStr).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
   const activeGoals = goals.slice(0,4);
   const recentBooks = books.filter(b=>b.status==="done").slice(-3);
   const readingNow = books.filter(b=>b.status==="reading").slice(0,3);
+
+  // 🌟 生理期提醒邏輯
+  let periodReminder = null;
+  if (periods && periods.length > 0) {
+    const sorted = [...periods].sort((a, b) => b.startDate.localeCompare(a.startDate));
+    const latest = sorted[0];
+    
+    if (!latest.endDate) {
+      // 正在生理期中
+      const days = Math.floor((new Date() - new Date(latest.startDate.replace(/-/g, '/'))) / (1000 * 60 * 60 * 24)) + 1;
+      periodReminder = {
+        title: "🌸 7ing 專屬呵護",
+        text: `今天是生理期第 ${days} 天，記得準備溫水和熱敷袋，給她多一點體貼喔！`,
+        color: "#ff4d6d", bg: "#fff0f3"
+      };
+    } else {
+      // 計算距離下次還有幾天 (預設 30 天週期)
+      const start = new Date(latest.startDate.replace(/-/g, '/'));
+      const nextDate = new Date(start);
+      nextDate.setDate(nextDate.getDate() + 30);
+      const daysLeft = Math.ceil((nextDate - new Date()) / (1000 * 60 * 60 * 24));
+      
+      // 如果剩餘天數在 5 天內
+      if (daysLeft > 0 && daysLeft <= 5) {
+        periodReminder = {
+          title: "🌸 貼心小提醒",
+          text: `距離 7ing 下次生理期大約還有 ${daysLeft} 天，可以先準備好巧克力和暖暖包囉！`,
+          color: "#ff8fab", bg: "#fff0f3"
+        };
+      } else if (daysLeft <= 0) {
+        periodReminder = {
+          title: "🌸 貼心小提醒",
+          text: `7ing 的生理期可能這幾天就會報到囉！請隨時注意她的狀況。`,
+          color: "#ff8fab", bg: "#fff0f3"
+        };
+      }
+    }
+  }
   
   // 擷取最新的 3 筆備忘錄
   const recentMemos = memos ? memos.slice(0, 3) : [];
@@ -2516,6 +2731,7 @@ const TABS = [
   { id:"reading",  label:"📖", name:"閱讀清單" },
   { id:"movies",   label:"🎬", name:"電影清單" },
   { id:"food",     label:"🍜", name:"美食地圖" },
+  { id:"period", label:"🌸", name:"專屬小精靈" }
   { id:"memo",     label:"📝", name:"備忘錄" },
   { id:"memory",   label:"💌", name:"回憶日記" },
 ];
@@ -2530,6 +2746,7 @@ function App() {
   const [goalLog, setGoalLog] = useState([]);
   const [books, setBooks] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [periods, setPeriods] = useState([]);
   const [notes, setNotes] = useState([]);
   const [movies, setMovies] = useState([]);
   const [mwishlist, setMwishlist] = useState([]);
@@ -2540,7 +2757,7 @@ function App() {
   const loadedRef = useRef({
     events:false,goals:false,goalLog:false,books:false,
     wishlist:false,notes:false,movies:false,mwishlist:false,
-    memos:false,food:false
+    memos:false,food:false,periods:false
   });
   const [isReady, setIsReady] = useState(false);
   const isReadyRef = useRef(false);
@@ -2631,6 +2848,7 @@ function App() {
     }
   }, [isReady, goals]);
   // Subscribe to Firebase (or localStorage) — each fires markLoaded when first data arrives
+  // 📥 1. 讀取資料 (Subscribe to Firebase or localStorage)
   useEffect(() => {
     const unsubs = [
       dbLoad(KEYS.events,    v => { setEvents(v);    markLoaded('events'); }),
@@ -2643,6 +2861,7 @@ function App() {
       dbLoad(KEYS.mwishlist, v => { setMwishlist(v); markLoaded('mwishlist'); }),
       dbLoad(KEYS.memos,     v => { setMemos(v);     markLoaded('memos'); }),
       dbLoad(KEYS.food,      v => { setFood(v);      markLoaded('food'); }),
+      dbLoad(KEYS.periods,   v => { setPeriods(v || []); markLoaded('periods'); }), 
     ];
     // Safety timeout: if Firebase never responds in 8s, unblock anyway
     const timeout = setTimeout(() => {
@@ -2651,11 +2870,12 @@ function App() {
     return () => { unsubs.forEach(u=>u&&u()); clearTimeout(timeout); };
   }, []);
 
-  // Debounced save — only after ALL data has loaded to prevent overwriting Firebase
+  // 📤 2. 寫入資料 (Debounced save)
   const saveDebounced = (key, data) => {
     clearTimeout(saveTimer.current[key]);
     saveTimer.current[key] = setTimeout(() => dbSave(key, data), 800);
   };
+  
   useEffect(() => { if(isReady) saveDebounced(KEYS.events,    events); },    [events, isReady]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.goals,     goals); },     [goals, isReady]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.goalLog,   goalLog); },   [goalLog, isReady]);
@@ -2666,6 +2886,7 @@ function App() {
   useEffect(() => { if(isReady) saveDebounced(KEYS.mwishlist, mwishlist); }, [mwishlist, isReady]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.memos,     memos); },     [memos, isReady]);
   useEffect(() => { if(isReady) saveDebounced(KEYS.food,      food); },      [food, isReady]);
+  useEffect(() => { if(isReady) saveDebounced(KEYS.periods,   periods); },   [periods, isReady]);
 
   if (!isReady) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:mode==="night"?"#060c28":"#dff0d8"}}>
@@ -2762,9 +2983,10 @@ function App() {
         {tab==="reading" && <ReadingPage books={books} setBooks={setBooks} wishlist={wishlist} setWishlist={setWishlist}/>}
         {tab==="movies"  && <MoviesPage movies={movies} setMovies={setMovies} mwishlist={mwishlist} setMwishlist={setMwishlist}/>}
         {tab==="food"    && <FoodPage food={food} setFood={setFood}/>}
+        {tab==="period" && <PeriodPage periods={periods} setPeriods={setPeriods}/>}
         {tab==="memo"    && <MemoPage memos={memos} setMemos={setMemos}/>}
         {tab==="memory"  && <MemoryPage notes={notes} setNotes={setNotes}/>}
-        
+    
       </div>
     </>
   );
