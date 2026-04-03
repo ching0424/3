@@ -2977,13 +2977,13 @@ function App() {
         </nav>
 
         {/* 分頁內容 */}
-        {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} memos={memos} goalLog={goalLog} mode={mode} lpBg={lpBg} setTab={setTab}/>}
+        {tab==="home"    && <HomePage events={events} goals={goals} books={books} notes={notes} memos={memos} goalLog={goalLog} mode={mode} periods={periods} lpBg={lpBg} setTab={setTab}/>}
         {tab==="calendar"&& <CalendarPage events={events} setEvents={setEvents}/>}
         {tab==="goals"   && <GoalsPage goals={goals} setGoals={setGoals} goalLog={goalLog} setGoalLog={setGoalLog}/>}
         {tab==="reading" && <ReadingPage books={books} setBooks={setBooks} wishlist={wishlist} setWishlist={setWishlist}/>}
         {tab==="movies"  && <MoviesPage movies={movies} setMovies={setMovies} mwishlist={mwishlist} setMwishlist={setMwishlist}/>}
         {tab==="food"    && <FoodPage food={food} setFood={setFood}/>}
-        {tab==="period" && <PeriodPage periods={periods} setPeriods={setPeriods}/>}
+        {tab==="periods" && <PeriodPage periods={periods} setPeriods={setPeriods}/>}
         {tab==="memo"    && <MemoPage memos={memos} setMemos={setMemos}/>}
         {tab==="memory"  && <MemoryPage notes={notes} setNotes={setNotes}/>}
     
