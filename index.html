@@ -623,6 +623,9 @@ function CalendarPage({ events, setEvents }) {
   const dayStr = d => `${monthStr(month)}-${String(d).padStart(2,"0")}`;
 
   const whoColor = w => w==="her"?COLORS.her:w==="him"?COLORS.him:COLORS.both;
+  
+  // 🌟 統一標籤顯示格式
+  const whoLabel = w => w==="her"?"🌻 7ing":w==="him"?"🏐️ KM":"🤝 共同";
 
   const upcoming = [...events].filter(e => e.date >= today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10);
 
@@ -630,6 +633,7 @@ function CalendarPage({ events, setEvents }) {
     <div className="page">
       <div className="page-title" style={{position:"relative"}}>📅 共同行事曆</div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start"}}>
+        
         {/* Calendar */}
         <div className="card" style={{flex:"1 1 380px"}}>
           <div className="cal-header">
@@ -648,7 +652,17 @@ function CalendarPage({ events, setEvents }) {
                   onClick={()=>{ if(c.cur){ setForm(f=>({...f,date:ds})); setShowModal(true); } }}>
                   <div className="cal-day-num">{c.day}</div>
                   {dayEvs.slice(0,2).map(e=>(
-                    <div key={e.id} className="cal-event-chip" style={{background:whoColor(e.who)+"33",color:whoColor(e.who)}}>{e.title}</div>
+                    <div key={e.id} className="cal-event-chip" style={{
+                      background:whoColor(e.who)+"33",
+                      color:whoColor(e.who),
+                      // 🌟 防擠壓設定：文字不換行、超過變點點點，並加上 title 讓滑鼠移過去可以看完整文字
+                      whiteSpace: "nowrap", 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis",
+                      maxWidth: "100%" 
+                    }} title={e.title}>
+                      {e.title}
+                    </div>
                   ))}
                   {dayEvs.length>2&&<div style={{fontSize:10,color:"var(--muted)"}}>+{dayEvs.length-2}</div>}
                 </div>
@@ -664,13 +678,31 @@ function CalendarPage({ events, setEvents }) {
             <div className="card-title">即將到來</div>
             {upcoming.length===0&&<div className="empty">暫無行程</div>}
             {upcoming.map(e=>(
-              <div key={e.id} className="event-item">
+              // 🌟 調整外層容器，讓它可以靈活縮放
+              <div key={e.id} className="event-item" style={{display: "flex", alignItems: "center", gap: 8, padding: "8px 0"}}>
                 <div style={{width:10,height:10,borderRadius:"50%",background:whoColor(e.who),flexShrink:0}}/>
-                <div className="event-date">{e.date} {e.time}</div>
-                <div className="event-title">{e.title}</div>
-                <span className={`badge badge-${e.who}`}>{e.who==="her"?"7ing":e.who==="him"?"KM":"共同"}</span>
-                <button className="btn btn-sm btn-soft" onClick={()=>openEdit(e)}>✏️</button>
-                <button className="btn btn-sm btn-danger" onClick={async()=>{if(await confirmDel.ask("確定要刪除這個行程嗎？"))del(e.id);}}>🗑️</button>
+                <div className="event-date" style={{flexShrink:0, color: "var(--muted)", fontSize: 12}}>{e.date.slice(5)} {e.time}</div> {/* 只顯示月-日，節省空間 */}
+                
+                {/* 🌟 加上 flex: 1 與 minWidth: 0，解決文字變直條的問題 */}
+                <div className="event-title" style={{
+                  flex: 1, 
+                  minWidth: 0, 
+                  whiteSpace: "nowrap", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis",
+                  fontWeight: 600,
+                  fontSize: 14
+                }} title={e.title}>
+                  {e.title}
+                </div>
+                
+                <span className={`badge badge-${e.who}`} style={{flexShrink: 0, fontSize: 10}}>{whoLabel(e.who)}</span>
+                
+                {/* 將編輯與刪除按鈕稍微縮小，避免佔用太多空間 */}
+                <div style={{display: "flex", gap: 4, flexShrink: 0}}>
+                  <button className="btn btn-sm btn-soft" style={{padding: "2px 6px", fontSize: 10}} onClick={()=>openEdit(e)}>✏️</button>
+                  <button className="btn btn-sm btn-danger" style={{padding: "2px 6px", fontSize: 10}} onClick={async()=>{if(await confirmDel.ask("確定要刪除這個行程嗎？"))del(e.id);}}>🗑️</button>
+                </div>
               </div>
             ))}
           </div>
@@ -678,9 +710,9 @@ function CalendarPage({ events, setEvents }) {
           {/* Legend */}
           <div className="card" style={{padding:16}}>
             <div className="chip-row">
-              <span className="badge badge-her">7ing的行程</span>
-              <span className="badge badge-him">KM的行程</span>
-              <span className="badge badge-both">共同行程</span>
+              <span className="badge badge-her">🌻 7ing 的行程</span>
+              <span className="badge badge-him">🏐️ KM 的行程</span>
+              <span className="badge badge-both">🤝 共同行程</span>
             </div>
           </div>
         </div>
@@ -699,9 +731,9 @@ function CalendarPage({ events, setEvents }) {
             </div>
             <label>誰的行程</label>
             <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
-              <option value="her">7ing</option>
-              <option value="him">KM</option>
-              <option value="both">共同</option>
+              <option value="her">🌻 7ing</option>
+              <option value="him">🏐️ KM</option>
+              <option value="both">🤝 共同</option>
             </select>
             <label>備註</label>
             <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="可選"/>
