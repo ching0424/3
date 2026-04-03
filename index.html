@@ -2610,6 +2610,21 @@ function HomePage({ events, goals, books, notes, memos, periods, goalLog, mode, 
           <DayTimeMeadowBanner />
       )}
 
+      {/* 🌟 只有在 periodReminder 有資料時，這個橫幅才會出現！ */}
+      {periodReminder && (
+        <div 
+          className="card" 
+          onClick={() => setTab && setTab("periods")} 
+          style={{ background: periodReminder.bg, border: `2px solid ${periodReminder.color}`, cursor: "pointer", marginBottom: 16 }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: periodReminder.color, marginBottom: 4 }}>{periodReminder.title}</div>
+            <div style={{ fontSize: 20, color: periodReminder.color }}>➔</div>
+          </div>
+          <div style={{ fontSize: 13, color: "var(--secondary)", lineHeight: 1.5, fontWeight: 600 }}>{periodReminder.text}</div>
+        </div>
+      )}
+  
       {/* 保持您原本完美的網格排版 */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
         
