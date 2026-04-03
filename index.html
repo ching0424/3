@@ -2548,7 +2548,7 @@ function HomePage({ events, goals, books, notes, memos, periods, goalLog, mode, 
       // 正在生理期中
       const days = Math.floor((new Date() - new Date(latest.startDate.replace(/-/g, '/'))) / (1000 * 60 * 60 * 24)) + 1;
       periodReminder = {
-        title: "🌸 7ing 專屬呵護",
+        title: "🌸 7ing 專屬小精靈",
         text: `今天是生理期第 ${days} 天，記得準備溫水和熱敷袋，給她多一點體貼喔！`,
         color: "#ff4d6d", bg: "#fff0f3"
       };
@@ -2731,7 +2731,7 @@ const TABS = [
   { id:"reading",  label:"📖", name:"閱讀清單" },
   { id:"movies",   label:"🎬", name:"電影清單" },
   { id:"food",     label:"🍜", name:"美食地圖" },
-  { id:"period", label:"🌸", name:"專屬小精靈" }
+  { id:"period",   label:"🌸", name:"專屬小精靈" },
   { id:"memo",     label:"📝", name:"備忘錄" },
   { id:"memory",   label:"💌", name:"回憶日記" },
 ];
