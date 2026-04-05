@@ -597,7 +597,8 @@ function CalendarPage({ events, setEvents }) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title:"", date:today(), time:"", who:"both", color:"", note:"" });
+  // 🌟 表單新增 endDate 欄位
+  const [form, setForm] = useState({ title:"", date:today(), endDate:"", time:"", who:"both", color:"", note:"" });
   const [editId, setEditId] = useState(null);
 
   const firstDay = new Date(year, month, 1).getDay();
@@ -610,27 +611,45 @@ function CalendarPage({ events, setEvents }) {
 
   const addOrEdit = () => {
     if (!form.title || !form.date) return;
+    // 防呆機制：結束日期不能早於開始日期
+    if (form.endDate && form.endDate < form.date) {
+      alert("結束日期不能早於開始日期喔！");
+      return;
+    }
     const ev = { ...form, id: editId || uid() };
     if (editId) setEvents(p => p.map(e => e.id===editId ? ev : e));
     else setEvents(p => [...p, ev]);
     setShowModal(false); setEditId(null);
-    setForm({ title:"", date:today(), time:"", who:"both", color:"", note:"" });
+    setForm({ title:"", date:today(), endDate:"", time:"", who:"both", color:"", note:"" });
   };
+  
   const del = id => setEvents(p => p.filter(e => e.id!==id));
-  const openEdit = ev => { setForm(ev); setEditId(ev.id); setShowModal(true); };
+  const openEdit = ev => { setForm({endDate:"", ...ev}); setEditId(ev.id); setShowModal(true); };
 
   const monthStr = m => `${year}-${String(m+1).padStart(2,"0")}`;
   const dayStr = d => `${monthStr(month)}-${String(d).padStart(2,"0")}`;
 
   const whoColor = w => w==="her"?COLORS.her:w==="him"?COLORS.him:COLORS.both;
-  
-  // 🌟 統一標籤顯示格式
   const whoLabel = w => w==="her"?"🌻 7ing":w==="him"?"🏐️ KM":"🤝 共同";
 
-  const upcoming = [...events].filter(e => e.date >= today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10);
+  // 🌟 即將到來列表：只要「結束日期」或「開始日期」大於等於今天，就顯示
+  const upcoming = [...events]
+    .filter(e => (e.endDate || e.date) >= today())
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .slice(0,10);
 
   return (
     <div className="page">
+      <style>{`
+        .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+        .cal-day { min-width: 0 !important; overflow: hidden !important; }
+        .cal-event-chip { 
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+          width: 100%; box-sizing: border-box; display: block; 
+          margin-bottom: 2px; /* 稍微縮小上下間距，讓連續感更好 */
+        }
+      `}</style>
+
       <div className="page-title" style={{position:"relative"}}>📅 共同行事曆</div>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"flex-start"}}>
         
@@ -645,26 +664,40 @@ function CalendarPage({ events, setEvents }) {
             {DAYS.map(d=><div key={d} className="cal-day-name">{d}</div>)}
             {cells.map((c,i)=>{
               const ds = c.cur ? dayStr(c.day) : null;
-              const dayEvs = ds ? events.filter(e=>e.date===ds) : [];
+              
+              // 🌟 判斷這一天有哪幾筆行程 (包含跨越多天的行程)
+              const dayEvs = ds ? events.filter(e => {
+                if (!e.endDate) return e.date === ds;
+                return ds >= e.date && ds <= e.endDate; // 只要在這區間內都算！
+              }) : [];
+              
               const isToday = ds===today();
+              
               return (
                 <div key={i} className={`cal-day${!c.cur?" other-month":""}${isToday?" today":""}`}
-                  onClick={()=>{ if(c.cur){ setForm(f=>({...f,date:ds})); setShowModal(true); } }}>
+                  onClick={()=>{ if(c.cur){ setForm(f=>({...f,date:ds, endDate:""})); setShowModal(true); } }}>
                   <div className="cal-day-num">{c.day}</div>
-                  {dayEvs.slice(0,2).map(e=>(
-                    <div key={e.id} className="cal-event-chip" style={{
-                      background:whoColor(e.who)+"33",
-                      color:whoColor(e.who),
-                      // 🌟 防擠壓設定：文字不換行、超過變點點點，並加上 title 讓滑鼠移過去可以看完整文字
-                      whiteSpace: "nowrap", 
-                      overflow: "hidden", 
-                      textOverflow: "ellipsis",
-                      maxWidth: "100%" 
-                    }} title={e.title}>
-                      {e.title}
-                    </div>
-                  ))}
-                  {dayEvs.length>2&&<div style={{fontSize:10,color:"var(--muted)"}}>+{dayEvs.length-2}</div>}
+                  {dayEvs.slice(0,3).map(e=>{
+                    // 🌟 連續行程的圓角魔法：開始日左邊圓角，結束日右邊圓角
+                    const isStart = e.date === ds;
+                    const isEnd = !e.endDate || e.endDate === ds;
+                    const isMultiDay = e.endDate && e.date !== e.endDate;
+                    
+                    return (
+                      <div key={e.id} className="cal-event-chip" style={{
+                        background: whoColor(e.who) + (isMultiDay && !isStart && !isEnd ? "44" : "33"), // 中間的日子稍微加深一點點背景
+                        color: whoColor(e.who),
+                        // 依照是否為頭尾來決定圓角，營造出長條視覺
+                        borderRadius: isStart && isEnd ? "4px" : isStart ? "4px 0 0 4px" : isEnd ? "0 4px 4px 0" : "0",
+                        borderLeft: isStart ? `2px solid ${whoColor(e.who)}` : "none",
+                        paddingLeft: isStart ? "4px" : "6px" // 開始日有左邊框，所以稍微調整 padding
+                      }} title={e.title}>
+                        {/* 🌟 如果是連續行程，只有第一天、或是每個月的 1 號會顯示文字，中間的日子空下來維持乾淨 */}
+                        {isStart || c.day === 1 ? e.title : "\u00A0"}
+                      </div>
+                    )
+                  })}
+                  {dayEvs.length>3&&<div style={{fontSize:10,color:"var(--muted)", textAlign:"center", marginTop:2}}>+{dayEvs.length-3}</div>}
                 </div>
               );
             })}
@@ -673,32 +706,25 @@ function CalendarPage({ events, setEvents }) {
 
         {/* Upcoming + add */}
         <div style={{flex:"1 1 240px"}}>
-          <button className="btn btn-primary" style={{width:"100%",marginBottom:16}} onClick={()=>{setEditId(null);setForm({title:"",date:today(),time:"",who:"both",note:""});setShowModal(true)}}>＋ 新增行程</button>
+          <button className="btn btn-primary" style={{width:"100%",marginBottom:16}} onClick={()=>{setEditId(null);setForm({title:"",date:today(),endDate:"",time:"",who:"both",note:""});setShowModal(true)}}>＋ 新增行程</button>
           <div className="card">
             <div className="card-title">即將到來</div>
             {upcoming.length===0&&<div className="empty">暫無行程</div>}
             {upcoming.map(e=>(
-              // 🌟 調整外層容器，讓它可以靈活縮放
               <div key={e.id} className="event-item" style={{display: "flex", alignItems: "center", gap: 8, padding: "8px 0"}}>
                 <div style={{width:10,height:10,borderRadius:"50%",background:whoColor(e.who),flexShrink:0}}/>
-                <div className="event-date" style={{flexShrink:0, color: "var(--muted)", fontSize: 12}}>{e.date.slice(5)} {e.time}</div> {/* 只顯示月-日，節省空間 */}
                 
-                {/* 🌟 加上 flex: 1 與 minWidth: 0，解決文字變直條的問題 */}
-                <div className="event-title" style={{
-                  flex: 1, 
-                  minWidth: 0, 
-                  whiteSpace: "nowrap", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis",
-                  fontWeight: 600,
-                  fontSize: 14
-                }} title={e.title}>
+                {/* 🌟 如果有多天，就顯示 4/1~4/3 */}
+                <div className="event-date" style={{flexShrink:0, color: "var(--muted)", fontSize: 12}}>
+                  {e.date.slice(5)}{e.endDate && e.endDate !== e.date ? `~${e.endDate.slice(5)}` : ""} {e.time}
+                </div>
+                
+                <div className="event-title" style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600, fontSize: 14 }} title={e.title}>
                   {e.title}
                 </div>
                 
                 <span className={`badge badge-${e.who}`} style={{flexShrink: 0, fontSize: 10}}>{whoLabel(e.who)}</span>
                 
-                {/* 將編輯與刪除按鈕稍微縮小，避免佔用太多空間 */}
                 <div style={{display: "flex", gap: 4, flexShrink: 0}}>
                   <button className="btn btn-sm btn-soft" style={{padding: "2px 6px", fontSize: 10}} onClick={()=>openEdit(e)}>✏️</button>
                   <button className="btn btn-sm btn-danger" style={{padding: "2px 6px", fontSize: 10}} onClick={async()=>{if(await confirmDel.ask("確定要刪除這個行程嗎？"))del(e.id);}}>🗑️</button>
@@ -707,12 +733,11 @@ function CalendarPage({ events, setEvents }) {
             ))}
           </div>
 
-          {/* Legend */}
           <div className="card" style={{padding:16}}>
             <div className="chip-row">
-              <span className="badge badge-her">🌻 7ing 的行程</span>
-              <span className="badge badge-him">🏐️ KM 的行程</span>
-              <span className="badge badge-both">🤝 共同行程</span>
+              <span className="badge badge-her">🌻 7ing</span>
+              <span className="badge badge-him">🏐️ KM</span>
+              <span className="badge badge-both">🤝 共同</span>
             </div>
           </div>
         </div>
@@ -723,20 +748,31 @@ function CalendarPage({ events, setEvents }) {
         <div className="overlay" onClick={()=>setShowModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-title">{editId?"編輯行程":"新增行程"}</div>
+            
             <label>標題</label>
-            <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="行程名稱"/>
+            <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="例如：澳洲雪梨自由行"/>
+            
             <div className="form-row">
-              <div className="form-group"><label>日期</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
-              <div className="form-group"><label>時間</label><input type="time" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}/></div>
+              <div className="form-group"><label>開始日期</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
+              {/* 🌟 新增的結束日期欄位 */}
+              <div className="form-group"><label>結束日期 (多天行程)</label><input type="date" value={form.endDate} onChange={e=>setForm(f=>({...f,endDate:e.target.value}))}/></div>
             </div>
-            <label>誰的行程</label>
-            <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
-              <option value="her">🌻 7ing</option>
-              <option value="him">🏐️ KM</option>
-              <option value="both">🤝 共同</option>
-            </select>
+            
+            <div className="form-row">
+              <div className="form-group"><label>時間 (選填)</label><input type="time" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}/></div>
+              <div className="form-group">
+                <label>誰的行程</label>
+                <select value={form.who} onChange={e=>setForm(f=>({...f,who:e.target.value}))}>
+                  <option value="her">🌻 7ing</option>
+                  <option value="him">🏐️ KM</option>
+                  <option value="both">🤝 共同</option>
+                </select>
+              </div>
+            </div>
+
             <label>備註</label>
-            <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="可選"/>
+            <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="可填寫航班、住宿或注意事項..."/>
+            
             <div className="modal-actions">
               <button className="btn btn-soft" onClick={()=>setShowModal(false)}>取消</button>
               <button className="btn btn-primary" onClick={addOrEdit}>{editId?"儲存":"新增"}</button>
